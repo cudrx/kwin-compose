@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Generated build artifacts
+dist/
+package/contents/code/
+
+# Logs and local runtime state
+*.log
+*.pid
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local Codex/agent state
+.agents/
+.codex/

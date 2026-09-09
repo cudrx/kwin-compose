@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compose — лаборатория окон</title>
+    <link rel="stylesheet" href="/sandbox/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Compose, главная"
+        ><span class="brand-mark">▧</span> compose<span class="version">PROTOTYPE / 01</span></a
+      ><span class="top-note">KWin · Plasma 6</span>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">ПОРЯДОК БЕЗ ТАЙЛИНГА</p>
+          <h1>Каждому окну — своё место.</h1>
+          <p class="subtitle">Индивидуальные размеры. Общий ритм. Пространство для перекрытия.</p>
+        </div>
+        <div class="mode" id="mode">○ Ручная сцена</div>
+      </section>
+      <div class="workspace-layout">
+        <aside class="controls">
+          <section>
+            <h2>Новое окно <span>01</span></h2>
+            <label for="preset">Размер</label
+            ><select id="preset">
+              <option value="browser">Браузер · широкий</option>
+              <option value="terminal">Терминал · средний</option>
+              <option value="notes">Заметки · высокий</option>
+              <option value="custom">Свой размер</option>
+            </select>
+            <div class="two-fields">
+              <label
+                >Ширина<input
+                  id="width"
+                  type="number"
+                  min="60"
+                  max="6000"
+                  step="30"
+                  value="1260" /></label
+              ><span>×</span
+              ><label
+                >Высота<input id="height" type="number" min="60" max="6000" step="30" value="960"
+              /></label>
+            </div>
+            <button id="add" class="secondary">＋ Добавить окно</button>
+          </section>
+          <section>
+            <h2>Рабочая область <span>02</span></h2>
+            <label for="aspect">Пропорции</label
+            ><select id="aspect">
+              <option value="3440,1440">3440 × 1440 · Ultrawide</option>
+              <option value="1920,1080">1920 × 1080 · 16:9</option>
+              <option value="1600,1200">1600 × 1200 · 4:3</option>
+              <option value="1080,1920">1080 × 1920 · Портрет</option>
+            </select>
+            <div class="step-field">
+              <label for="step">Шаг сетки</label
+              ><input id="step" type="number" min="8" max="150" value="30" />
+            </div>
+            <label class="toggle"
+              ><input id="grid-toggle" type="checkbox" checked /><span>Показать сетку</span></label
+            >
+          </section>
+          <section class="compose-actions">
+            <button id="format" class="primary">Форматировать окна <span>↗</span></button>
+            <p>Включает размещение новых окон.<br />Существующие остаются на месте.</p>
+            <div class="utility">
+              <button id="demo">Пример</button><button id="clear">Очистить</button>
+            </div>
+          </section>
+          <section class="cycle">
+            <h2>Цикл опор <span>06</span></h2>
+            <div id="anchors" aria-label="Следующая опорная позиция"></div>
+            <p id="next-anchor">Следующая: 1 · сверху слева</p>
+          </section>
+        </aside>
+        <section class="scene-panel" aria-label="Песочница размещения">
+          <div class="scene-toolbar">
+            <span><span class="live-dot"></span> ЛОКАЛЬНАЯ ПЕСОЧНИЦА</span
+            ><span id="area-label">3440 × 1440</span>
+          </div>
+          <div class="stage-surround">
+            <div id="stage" aria-label="Рабочая область с окнами">
+              <svg id="grid" aria-hidden="true"></svg>
+              <div id="safe-area" aria-hidden="true"></div>
+              <div id="windows"></div>
+              <div id="empty">
+                <span>＋</span><strong>Место для новой композиции</strong>
+                <p>Добавь окно или загрузи пример.</p>
+              </div>
+            </div>
+          </div>
+          <div class="scene-footer">
+            <span>Перетаскивай за заголовок · меняй размер за нижний угол</span
+            ><span id="grid-info"></span>
+          </div>
+          <div class="status" id="status" role="status">
+            Сцена свободная. Нажми «Форматировать окна», чтобы включить композицию.
+          </div>
+          <section class="window-list">
+            <div class="list-title">
+              <h2>Окна в сцене</h2>
+              <span id="count">0 окон</span>
+            </div>
+            <div id="records"></div>
+          </section>
+        </section>
+      </div>
+      <footer>
+        COMPOSE LAB
+        <span>Тот же алгоритм, что в KWin-скрипте. Геометрия — в логических единицах.</span>
+      </footer>
+    </main>
+    <script type="module" src="/sandbox/app.js"></script>
+  </body>
+</html>

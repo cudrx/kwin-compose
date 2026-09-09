@@ -1,0 +1,21 @@
+{
+  "name": "kwin-compose",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Overlapping, grid-aligned window composition for KWin 6",
+  "scripts": {
+    "test": "node tests/core.test.js && node tests/runtime.test.js",
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/serve.mjs",
+    "check": "npm run format:check && node scripts/check.mjs",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.12"
+  }
+}
