@@ -29,7 +29,9 @@ export function createKwinAdapter(workspace, host) {
     const rect = geometry(window);
 
     return (
-      ['x', 'y', 'width', 'height'].every((key) => Number.isFinite(rect[key])) &&
+      ['x', 'y', 'width', 'height'].every((key) =>
+        Number.isFinite(rect[key]),
+      ) &&
       rect.width > 0 &&
       rect.height > 0
     );
@@ -64,10 +66,16 @@ export function createKwinAdapter(workspace, host) {
         output && typeof workspace.currentDesktopForScreen === 'function'
           ? workspace.currentDesktopForScreen(output)
           : workspace.currentDesktop,
-      desktop = window.onAllDesktops || desktops.length === 0 ? currentDesktop : desktops[0];
+      desktop =
+        window.onAllDesktops || desktops.length === 0
+          ? currentDesktop
+          : desktops[0];
     if (!output || !desktop) return null;
 
-    return Object.assign({}, workspace.clientArea(host.areaOption, output, desktop));
+    return Object.assign(
+      {},
+      workspace.clientArea(host.areaOption, output, desktop),
+    );
   }
 
   function limits(window) {
@@ -152,7 +160,9 @@ export function createKwinAdapter(workspace, host) {
   function apply(window, rect) {
     if (!valid(window)) return false;
     try {
-      window.frameGeometry = host.makeRect ? host.makeRect(rect) : Object.assign({}, rect);
+      window.frameGeometry = host.makeRect
+        ? host.makeRect(rect)
+        : Object.assign({}, rect);
       return true;
     } catch (error) {
       host.log(String(error));

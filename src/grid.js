@@ -8,7 +8,8 @@ export function makeGrid(area, options = {}) {
     cellHeight = area.height / rows,
     x = (index) => Math.round(area.x + index * cellWidth),
     y = (index) => Math.round(area.y + index * cellHeight),
-    margin = (name, fallback) => Math.max(0, Math.floor(Number(options[name] ?? fallback) || 0)),
+    margin = (name, fallback) =>
+      Math.max(0, Math.floor(Number(options[name] ?? fallback) || 0)),
     left = Math.min(columns, margin('left', 1)),
     right = Math.max(left, columns - margin('right', 1)),
     top = Math.min(rows, margin('top', 1)),
@@ -26,7 +27,12 @@ export function makeGrid(area, options = {}) {
     right,
     top,
     bottom,
-    bounds: { x: x(left), y: y(top), width: x(right) - x(left), height: y(bottom) - y(top) },
+    bounds: {
+      x: x(left),
+      y: y(top),
+      width: x(right) - x(left),
+      height: y(bottom) - y(top),
+    },
   };
 }
 
@@ -55,7 +61,8 @@ function axis(grid, horizontal) {
 function nearestIndex(value, spec, last = spec.last) {
   let best = spec.first;
   for (let index = spec.first + 1; index <= last; index++)
-    if (Math.abs(spec.line(index) - value) < Math.abs(spec.line(best) - value)) best = index;
+    if (Math.abs(spec.line(index) - value) < Math.abs(spec.line(best) - value))
+      best = index;
   return best;
 }
 
@@ -66,7 +73,8 @@ function snappedSize(value, spec, minimum, maximum) {
     for (let end = start + 1; end <= spec.last; end++) {
       const size = spec.line(end) - spec.line(start);
       if (size < limits.min || size > limits.max) continue;
-      if (best === undefined || Math.abs(size - value) < Math.abs(best - value)) best = size;
+      if (best === undefined || Math.abs(size - value) < Math.abs(best - value))
+        best = size;
     }
   }
 
@@ -113,11 +121,22 @@ function snapCoordinate(value, size, spec) {
 }
 
 export function snapSize(size, grid, limits = {}) {
-  if (limits.resizeable === false) return { width: size.width, height: size.height };
+  if (limits.resizeable === false)
+    return { width: size.width, height: size.height };
 
   return {
-    width: snappedSize(size.width, axis(grid, true), limits.minWidth, limits.maxWidth),
-    height: snappedSize(size.height, axis(grid, false), limits.minHeight, limits.maxHeight),
+    width: snappedSize(
+      size.width,
+      axis(grid, true),
+      limits.minWidth,
+      limits.maxWidth,
+    ),
+    height: snappedSize(
+      size.height,
+      axis(grid, false),
+      limits.minHeight,
+      limits.maxHeight,
+    ),
   };
 }
 
@@ -154,14 +173,23 @@ export function snapWindow(rect, grid, limits = {}) {
   };
 }
 
-function snapResizeAxis(beforeStart, beforeSize, afterStart, afterSize, spec, minimum, maximum) {
+function snapResizeAxis(
+  beforeStart,
+  beforeSize,
+  afterStart,
+  afterSize,
+  spec,
+  minimum,
+  maximum,
+) {
   const beforeEnd = beforeStart + beforeSize,
     afterEnd = afterStart + afterSize,
     startChanged = afterStart !== beforeStart,
     endChanged = afterEnd !== beforeEnd,
     limits = normalizedLimits(minimum, maximum);
 
-  if (!startChanged && !endChanged) return { start: afterStart, size: afterSize };
+  if (!startChanged && !endChanged)
+    return { start: afterStart, size: afterSize };
 
   let best = null;
   for (let startIndex = spec.first; startIndex <= spec.last; startIndex++) {
@@ -205,11 +233,18 @@ export function snapResize(before, after, grid, limits = {}) {
       limits.maxHeight,
     );
 
-  return { x: horizontal.start, y: vertical.start, width: horizontal.size, height: vertical.size };
+  return {
+    x: horizontal.start,
+    y: vertical.start,
+    width: horizontal.size,
+    height: vertical.size,
+  };
 }
 
 export function snapAll(windows, grid) {
   return windows.map((window) =>
-    Object.assign({}, window, { rect: snapWindow(window.rect, grid, window.limits ?? window) }),
+    Object.assign({}, window, {
+      rect: snapWindow(window.rect, grid, window.limits ?? window),
+    }),
   );
 }

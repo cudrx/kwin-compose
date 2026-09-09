@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeGrid, snapAll, snapPosition, snapResize, snapWindow } from '../src/grid.js';
+import {
+  makeGrid,
+  snapAll,
+  snapPosition,
+  snapResize,
+  snapWindow,
+} from '../src/grid.js';
 
 const rect = (x, y, width, height) => ({ x, y, width, height });
 const grid = (area = rect(0, 0, 1200, 900)) => makeGrid(area);
@@ -16,18 +22,28 @@ test('grid lines are relative to negative and non-zero work-area origins', () =>
 });
 
 test('whole-window snapping rounds size and position near the current geometry', () => {
-  assert.deepEqual(snapWindow(rect(47, 52, 317, 248), grid()), rect(60, 60, 330, 240));
+  assert.deepEqual(
+    snapWindow(rect(47, 52, 317, 248), grid()),
+    rect(60, 60, 330, 240),
+  );
 });
 
 test('position snapping preserves the actual size', () => {
-  assert.deepEqual(snapPosition(rect(47, 52, 317, 248), grid()), rect(60, 60, 317, 248));
+  assert.deepEqual(
+    snapPosition(rect(47, 52, 317, 248), grid()),
+    rect(60, 60, 317, 248),
+  );
 });
 
 test('position snapping uses an actual line on a fractional grid', () => {
   const g = grid(rect(0, 0, 3440, 1440)),
     actual = snapPosition(rect(165, 90, 317, 248), g);
   assert.equal(actual.x, 179);
-  assert.ok(Array.from({ length: g.columns + 1 }, (_, index) => g.x(index)).includes(actual.x));
+  assert.ok(
+    Array.from({ length: g.columns + 1 }, (_, index) => g.x(index)).includes(
+      actual.x,
+    ),
+  );
 });
 
 test('whole-window snapping puts both horizontal edges on fractional-grid lines', () => {
@@ -39,7 +55,10 @@ test('whole-window snapping puts both horizontal edges on fractional-grid lines'
 });
 
 test('position snapping keeps a movable oversized window predictable', () => {
-  assert.deepEqual(snapPosition(rect(200, 200, 1500, 1000), grid()), rect(30, 30, 1500, 1000));
+  assert.deepEqual(
+    snapPosition(rect(200, 200, 1500, 1000), grid()),
+    rect(30, 30, 1500, 1000),
+  );
 });
 
 test('whole-window snapping honours fixed and min/max sizes', () => {
@@ -48,13 +67,19 @@ test('whole-window snapping honours fixed and min/max sizes', () => {
     rect(60, 60, 317, 248),
   );
   assert.deepEqual(
-    snapWindow(rect(47, 52, 317, 248), grid(), { minWidth: 305, maxWidth: 315 }),
+    snapWindow(rect(47, 52, 317, 248), grid(), {
+      minWidth: 305,
+      maxWidth: 315,
+    }),
     rect(60, 60, 315, 240),
   );
 });
 
 test('whole-window snapping stays within the effective bounds when possible', () => {
-  assert.deepEqual(snapWindow(rect(1102, 805, 317, 248), grid()), rect(840, 600, 330, 240));
+  assert.deepEqual(
+    snapWindow(rect(1102, 805, 317, 248), grid()),
+    rect(840, 600, 330, 240),
+  );
 });
 
 test('right-bottom resize preserves the opposite edges', () => {
@@ -83,7 +108,9 @@ test('resize constraints take priority over exact grid alignment', () => {
 
 test('resize chooses the nearest grid line allowed by size constraints', () => {
   assert.deepEqual(
-    snapResize(rect(60, 60, 330, 240), rect(60, 60, 310, 240), grid(), { minWidth: 305 }),
+    snapResize(rect(60, 60, 330, 240), rect(60, 60, 310, 240), grid(), {
+      minWidth: 305,
+    }),
     rect(60, 60, 330, 240),
   );
 });

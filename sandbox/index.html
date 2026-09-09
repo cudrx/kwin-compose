@@ -1,15 +1,16 @@
 <!doctype html>
 <html lang="ru">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Compose — лаборатория окон</title>
-    <link rel="stylesheet" href="/sandbox/style.css" />
+    <link rel="stylesheet" href="/sandbox/style.css">
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="/" aria-label="Compose, главная"
-        ><span class="brand-mark">▧</span> compose<span class="version">PROTOTYPE / 01</span></a
+        ><span class="brand-mark">▧</span>
+        compose<span class="version">PROTOTYPE / 01</span></a
       ><span class="top-note">KWin · Plasma 6</span>
     </header>
     <main>
@@ -17,7 +18,9 @@
         <div>
           <p class="eyebrow">ПОРЯДОК БЕЗ ТАЙЛИНГА</p>
           <h1>Каждому окну — своё место.</h1>
-          <p class="subtitle">Индивидуальные размеры. Общий ритм. Пространство для перекрытия.</p>
+          <p class="subtitle">
+            Индивидуальные размеры. Общий ритм. Пространство для перекрытия.
+          </p>
         </div>
         <div class="mode active">● Привязка включена</div>
       </section>
@@ -40,13 +43,23 @@
                   min="60"
                   max="6000"
                   step="30"
-                  value="1260" /></label
+                  value="1260"
+                ></label
               ><span>×</span
               ><label
-                >Высота<input id="height" type="number" min="60" max="6000" step="30" value="960"
-              /></label>
+                >Высота<input
+                  id="height"
+                  type="number"
+                  min="60"
+                  max="6000"
+                  step="30"
+                  value="960"
+                ></label
+              >
             </div>
-            <button id="add" class="secondary" type="button">＋ Добавить окно</button>
+            <button id="add" class="secondary" type="button">
+              ＋ Добавить окно
+            </button>
           </section>
           <section>
             <h2>Рабочая область <span>02</span></h2>
@@ -58,11 +71,12 @@
               <option value="1080,1920">1080 × 1920 · Портрет</option>
             </select>
             <div class="step-field">
-              <label for="step">Шаг сетки</label
-              ><input id="step" type="number" min="8" max="150" value="30" />
+              <label for="step">Шаг сетки</label>
+              <input id="step" type="number" min="8" max="150" value="30">
             </div>
             <label class="toggle"
-              ><input id="grid-toggle" type="checkbox" checked /><span>Показать сетку</span></label
+              ><input id="grid-toggle" type="checkbox" checked>
+              <span>Показать сетку</span></label
             >
           </section>
           <section class="compose-actions">
@@ -110,7 +124,10 @@
       </div>
       <footer>
         COMPOSE LAB
-        <span>Тот же алгоритм, что в KWin-скрипте. Геометрия — в логических единицах.</span>
+        <span
+          >Тот же алгоритм, что в KWin-скрипте. Геометрия — в логических
+          единицах.</span
+        >
       </footer>
     </main>
     <script type="module" src="/sandbox/app.js"></script>

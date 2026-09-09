@@ -1,4 +1,10 @@
-import { makeGrid, snapAll, snapPosition, snapResize, snapWindow } from '../src/grid.js';
+import {
+  makeGrid,
+  snapAll,
+  snapPosition,
+  snapResize,
+  snapWindow,
+} from '../src/grid.js';
 
 const $ = (id) => document.getElementById(id),
   palette = [
@@ -29,7 +35,9 @@ function displayWindow(window) {
   element.innerHTML =
     '<div class="titlebar"><span></span><button aria-label="Закрыть окно">×</button></div><div class="window-content"><div class="window-number"></div><div class="window-description">Пространство для твоей работы</div><div class="skeleton"></div><div class="skeleton short"></div><div class="skeleton"></div></div><div class="resize-handle" aria-label="Изменить размер"></div>';
   element.querySelector('.titlebar span').textContent = window.title;
-  element.querySelector('.window-number').textContent = String(window.number).padStart(2, '0');
+  element.querySelector('.window-number').textContent = String(
+    window.number,
+  ).padStart(2, '0');
   element.querySelector('button').onclick = () => {
     windows = windows.filter((other) => other.id !== window.id);
     render();
@@ -38,7 +46,8 @@ function displayWindow(window) {
   element.querySelector('.titlebar').onpointerdown = (event) => {
     if (!event.target.closest('button')) drag(event, window, false);
   };
-  element.querySelector('.resize-handle').onpointerdown = (event) => drag(event, window, true);
+  element.querySelector('.resize-handle').onpointerdown = (event) =>
+    drag(event, window, true);
 
   return element;
 }
@@ -51,7 +60,10 @@ function render() {
   $('area-label').textContent = `${area.width} × ${area.height}`;
   $('grid-info').textContent =
     `${currentGrid.columns} × ${currentGrid.rows} ячеек · ${currentGrid.cellWidth.toFixed(1)} × ${currentGrid.cellHeight.toFixed(1)}`;
-  svg.setAttribute('viewBox', `${area.x} ${area.y} ${area.width} ${area.height}`);
+  svg.setAttribute(
+    'viewBox',
+    `${area.x} ${area.y} ${area.width} ${area.height}`,
+  );
   svg.style.display = $('grid-toggle').checked ? 'block' : 'none';
   let path = '';
   for (let index = 0; index <= currentGrid.columns; index++)
@@ -72,7 +84,8 @@ function render() {
         row.className = 'record';
         row.innerHTML =
           '<span class="record-dot"></span><span class="name"></span><span class="dimensions"></span><span class="result"></span>';
-        row.querySelector('.record-dot').style.background = palette[(window.number - 1) % 6][1];
+        row.querySelector('.record-dot').style.background =
+          palette[(window.number - 1) % 6][1];
         row.querySelector('.name').textContent = window.title;
         row.querySelector('.dimensions').textContent =
           `${Math.round(window.rect.width)} × ${Math.round(window.rect.height)} · ${Math.round(window.rect.x)}, ${Math.round(window.rect.y)}`;
@@ -118,7 +131,11 @@ function drag(event, window, resize) {
       : snapPosition(window.rect, grid());
     window.status = resize ? 'Ресайз по сетке' : 'Позиция по сетке';
     render();
-    message(resize ? 'Изменённые края подогнаны.' : 'Положение подогнано, размер сохранён.');
+    message(
+      resize
+        ? 'Изменённые края подогнаны.'
+        : 'Положение подогнано, размер сохранён.',
+    );
   }
   target.addEventListener('pointermove', move);
   target.addEventListener('pointerup', end);
@@ -195,7 +212,10 @@ function demo() {
 $('add').onclick = add;
 $('demo').onclick = demo;
 $('format').onclick = () => {
-  windows = snapAll(windows, grid()).map((window) => ({ ...window, status: 'Подогнано целиком' }));
+  windows = snapAll(windows, grid()).map((window) => ({
+    ...window,
+    status: 'Подогнано целиком',
+  }));
   render();
   message('Все окна подогнаны независимо рядом с текущими местами.');
 };
@@ -215,7 +235,9 @@ $('step').onchange = () => {
   )
     $('step').value = 30;
   render();
-  message('Шаг изменён. Существующие окна сохраняют геометрию до следующего действия.');
+  message(
+    'Шаг изменён. Существующие окна сохраняют геометрию до следующего действия.',
+  );
 };
 $('aspect').onchange = () => {
   const [width, height] = $('aspect').value.split(',').map(Number);
@@ -223,7 +245,11 @@ $('aspect').onchange = () => {
   demo();
 };
 $('preset').onchange = () => {
-  const presets = { browser: [1260, 960], terminal: [900, 690], notes: [660, 1050] },
+  const presets = {
+      browser: [1260, 960],
+      terminal: [900, 690],
+      notes: [660, 1050],
+    },
     selectedPreset = presets[$('preset').value];
   if (selectedPreset) [$('width').value, $('height').value] = selectedPreset;
 };

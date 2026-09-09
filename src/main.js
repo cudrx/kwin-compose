@@ -18,7 +18,12 @@ export function createController(adapter) {
 
   function track(window, snapOnReady) {
     if (!window || tracked.has(window)) return;
-    const state = { before: null, applying: false, cancelReady: () => {}, offs: [] };
+    const state = {
+      before: null,
+      applying: false,
+      cancelReady: () => {},
+      offs: [],
+    };
     tracked.set(window, state);
 
     function started(kind) {
@@ -53,7 +58,10 @@ export function createController(adapter) {
         if (!ready) return;
         apply(ready, (grid) => {
           state.applying = true;
-          adapter.apply(ready, snapWindow(adapter.geometry(ready), grid, adapter.limits(ready)));
+          adapter.apply(
+            ready,
+            snapWindow(adapter.geometry(ready), grid, adapter.limits(ready)),
+          );
           state.applying = false;
         });
       });
@@ -73,7 +81,9 @@ export function createController(adapter) {
   Array.from(adapter.workspace.stackingOrder).forEach((window) => {
     track(window, false);
   });
-  const offAdded = adapter.connect(adapter.workspace.windowAdded, (window) => track(window, true)),
+  const offAdded = adapter.connect(adapter.workspace.windowAdded, (window) =>
+      track(window, true),
+    ),
     offRemoved = adapter.connect(adapter.workspace.windowRemoved, untrack);
 
   return {

@@ -15,9 +15,11 @@ function signal() {
     slots,
   };
 }
+
 function rect(x, y, width, height) {
   return { x, y, width, height };
 }
+
 function makeWindow(id, output, desktop, extra = {}) {
   return {
     internalId: id,
@@ -42,6 +44,7 @@ function makeWindow(id, output, desktop, extra = {}) {
     ...extra,
   };
 }
+
 function fixture(initial = []) {
   const desktop = initial[0]?.desktops?.[0] ?? { id: 'd1' },
     output = initial[0]?.output ?? { name: 'DP-1' },
@@ -178,7 +181,9 @@ test('work area uses the window desktop rather than the current desktop', () => 
     windowDesktop = { id: 'window-desktop' },
     window = f.add('other-desktop', { desktops: [windowDesktop] });
   f.workspace.clientArea = (_option, _output, desktop) =>
-    desktop === windowDesktop ? rect(-1200, 0, 1200, 900) : rect(0, 0, 1200, 900);
+    desktop === windowDesktop
+      ? rect(-1200, 0, 1200, 900)
+      : rect(0, 0, 1200, 900);
   assert.equal(f.adapter.area(window).x, -1200);
 });
 

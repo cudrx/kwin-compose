@@ -8,10 +8,12 @@ for (const name of modules) {
   source = source
     .replace(/^import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];\r?\n/gm, '')
     .replace(/^export /gm, '');
-  if (/^(import|export)\s/m.test(source)) throw new Error('Unsupported module syntax in ' + name);
+  if (/^(import|export)\s/m.test(source))
+    throw new Error('Unsupported module syntax in ' + name);
   bundle += '\n// ' + name + '\n' + source;
 }
-bundle += '\n' + (await readFile(new URL('scripts/kwin-entry.js', root), 'utf8'));
+bundle +=
+  '\n' + (await readFile(new URL('scripts/kwin-entry.js', root), 'utf8'));
 new Script(bundle, { filename: 'main.js' });
 await mkdir(new URL('package/contents/code/', root), { recursive: true });
 await writeFile(new URL('package/contents/code/main.js', root), bundle);
@@ -24,6 +26,7 @@ function crc32(bytes) {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
+
 const files = [
   ['metadata.json', await readFile(new URL('package/metadata.json', root))],
   ['contents/code/main.js', Buffer.from(bundle)],
@@ -56,6 +59,7 @@ for (const [name, data] of files) {
   central.push(entry, filename);
   offset += head.length + filename.length + data.length;
 }
+
 const directory = Buffer.concat(central),
   end = Buffer.alloc(22);
 end.writeUInt32LE(0x06054b50, 0);

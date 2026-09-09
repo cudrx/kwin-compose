@@ -10,12 +10,19 @@ const types = {
 };
 const server = createServer(async (req, res) => {
   try {
-    const path = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-    const file = resolve(root, '.' + (path === '/' ? '/sandbox/index.html' : path));
+    const path = decodeURIComponent(
+      new URL(req.url, 'http://localhost').pathname,
+    );
+    const file = resolve(
+      root,
+      '.' + (path === '/' ? '/sandbox/index.html' : path),
+    );
     const relative = file.slice(root.length);
     if (
       !file.startsWith(root) ||
-      !['sandbox' + sep, 'src' + sep].some((prefix) => relative.startsWith(prefix))
+      !['sandbox' + sep, 'src' + sep].some((prefix) =>
+        relative.startsWith(prefix),
+      )
     ) {
       res.writeHead(403);
       res.end('Forbidden');
