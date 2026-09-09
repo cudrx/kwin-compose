@@ -224,8 +224,7 @@ input:focus-visible {
 .primary span {
   float: right;
 }
-.compose-actions p,
-.cycle p {
+.compose-actions p {
   font-size: 10px;
   line-height: 1.8;
   color: var(--muted);
@@ -242,25 +241,6 @@ input:focus-visible {
 }
 .utility button:hover {
   color: white;
-}
-#anchors {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 5px;
-}
-#anchors span {
-  display: grid;
-  place-items: center;
-  height: 25px;
-  border: 1px solid #374154;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #8491a5;
-}
-#anchors span.next {
-  color: #dce8ff;
-  background: #334461;
-  border-color: #7a9acb;
 }
 .scene-panel {
   min-width: 0;
@@ -489,9 +469,6 @@ input:focus-visible {
   text-align: right;
   color: #92bca9;
   font-size: 10px;
-}
-.record .result.fallback {
-  color: #d4b48a;
 }
 footer {
   display: flex;

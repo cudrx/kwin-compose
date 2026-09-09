@@ -19,7 +19,7 @@
           <h1>Каждому окну — своё место.</h1>
           <p class="subtitle">Индивидуальные размеры. Общий ритм. Пространство для перекрытия.</p>
         </div>
-        <div class="mode" id="mode">○ Ручная сцена</div>
+        <div class="mode active">● Привязка включена</div>
       </section>
       <div class="workspace-layout">
         <aside class="controls">
@@ -66,16 +66,11 @@
             >
           </section>
           <section class="compose-actions">
-            <button id="format" class="primary">Форматировать окна <span>↗</span></button>
-            <p>Включает размещение новых окон.<br />Существующие остаются на месте.</p>
+            <button id="format" class="primary">Подогнать всё к сетке <span>↗</span></button>
+            <p>Тестовая массовая операция только для веб-песочницы.</p>
             <div class="utility">
               <button id="demo">Пример</button><button id="clear">Очистить</button>
             </div>
-          </section>
-          <section class="cycle">
-            <h2>Цикл опор <span>06</span></h2>
-            <div id="anchors" aria-label="Следующая опорная позиция"></div>
-            <p id="next-anchor">Следующая: 1 · сверху слева</p>
           </section>
         </aside>
         <section class="scene-panel" aria-label="Песочница размещения">
@@ -99,7 +94,7 @@
             ><span id="grid-info"></span>
           </div>
           <div class="status" id="status" role="status">
-            Сцена свободная. Нажми «Форматировать окна», чтобы включить композицию.
+            Новые окна сразу подгоняются к общей сетке.
           </div>
           <section class="window-list">
             <div class="list-title">
