@@ -59,10 +59,12 @@ export function createKwinAdapter(workspace, host) {
 
   function area(window) {
     const output = window.output,
-      desktop =
+      desktops = Array.from(window.desktops || []),
+      currentDesktop =
         output && typeof workspace.currentDesktopForScreen === 'function'
           ? workspace.currentDesktopForScreen(output)
-          : workspace.currentDesktop;
+          : workspace.currentDesktop,
+      desktop = window.onAllDesktops || desktops.length === 0 ? currentDesktop : desktops[0];
     if (!output || !desktop) return null;
 
     return Object.assign({}, workspace.clientArea(host.areaOption, output, desktop));
@@ -96,25 +98,55 @@ export function createKwinAdapter(workspace, host) {
       finished = true;
       cancelQuiet();
       cancelDeadline();
-      offs.forEach((off) => off());
-      callback(deliver && valid(window) ? window : null);
+      offs.forEach((off) => {
+        off();
+      });
+      callback(deliver && eligible(window) ? window : null);
     }
     function changed() {
       cancelQuiet();
-      if (valid(window)) cancelQuiet = host.schedule(() => finish(true), 80);
+      if (eligible(window)) cancelQuiet = host.schedule(() => finish(true), 80);
     }
     offs.push(connect(window.frameGeometryChanged, changed));
-    offs.push(connect(window.interactiveMoveResizeStarted, () => finish(false)));
-    offs.push(
-      connect(window.moveResizedChanged, () => {
-        if (window.move || window.resize) finish(false);
-      }),
-    );
-    offs.push(connect(workspace.windowRemoved, (removed) => removed === window && finish(false)));
-    cancelDeadline = host.schedule(() => finish(true), 1500);
+    offs.push(connect(window.hiddenChanged, changed));
+    offs.push(connect(window.minimizedChanged, changed));
+    cancelDeadline = host.schedule(() => finish(eligible(window)), 1500);
     changed();
 
     return () => finish(false);
+  }
+
+  function onInteractive(window, started, finished) {
+    let kind = null;
+    function begin() {
+      kind = window.resize ? 'resize' : window.move ? 'move' : null;
+      started(kind);
+    }
+    function end() {
+      const completed = kind;
+      kind = null;
+      finished(completed);
+    }
+    const offs = [];
+    if (
+      window.interactiveMoveResizeStarted?.connect &&
+      window.interactiveMoveResizeFinished?.connect
+    ) {
+      offs.push(connect(window.interactiveMoveResizeStarted, begin));
+      offs.push(connect(window.interactiveMoveResizeFinished, end));
+    } else {
+      offs.push(
+        connect(window.moveResizedChanged, () => {
+          if (window.move || window.resize) begin();
+          else end();
+        }),
+      );
+    }
+
+    return () =>
+      offs.forEach((off) => {
+        off();
+      });
   }
 
   function apply(window, rect) {
@@ -138,9 +170,13 @@ export function createKwinAdapter(workspace, host) {
     area,
     limits,
     whenReady,
+    onInteractive,
     apply,
     config: host.config,
     log: host.log,
-    dispose: () => Array.from(disconnectors).forEach((disconnect) => disconnect()),
+    dispose: () =>
+      Array.from(disconnectors).forEach((disconnect) => {
+        disconnect();
+      }),
   };
 }

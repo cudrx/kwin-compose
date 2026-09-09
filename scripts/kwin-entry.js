@@ -33,5 +33,5 @@ if (typeof workspace !== 'undefined') {
     }),
     log: (message) => console.log('[kwin-compose] ' + message),
   });
-  var composeController = createController(composeAdapter);
+  createController(composeAdapter);
 }

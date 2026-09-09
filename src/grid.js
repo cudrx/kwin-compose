@@ -34,107 +34,154 @@ function clamp(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
-function sizeLimit(value, minimum, maximum) {
+function normalizedLimits(minimum, maximum) {
   const min = Math.max(1, Number(minimum) || 1),
     max = Number(maximum) > 0 ? Number(maximum) : Infinity;
 
-  return clamp(value, min, Math.max(min, max));
+  return { min, max: Math.max(min, max) };
 }
 
-function snapLength(value, cell, available, minimum, maximum) {
-  const min = Math.max(1, Number(minimum) || 1),
-    max = Number(maximum) > 0 ? Number(maximum) : Infinity,
-    usableMax = Math.min(available, max),
-    lowCells = Math.ceil(min / cell),
-    highCells = Math.floor(usableMax / cell);
+function sizeLimit(value, minimum, maximum) {
+  const limits = normalizedLimits(minimum, maximum);
+  return clamp(value, limits.min, limits.max);
+}
 
-  if (lowCells <= highCells) {
-    const cells = clamp(Math.round(value / cell), lowCells, highCells);
-    return sizeLimit(Math.round(cells * cell), min, max);
+function axis(grid, horizontal) {
+  return horizontal
+    ? { line: grid.x, first: grid.left, last: grid.right }
+    : { line: grid.y, first: grid.top, last: grid.bottom };
+}
+
+function nearestIndex(value, spec, last = spec.last) {
+  let best = spec.first;
+  for (let index = spec.first + 1; index <= last; index++)
+    if (Math.abs(spec.line(index) - value) < Math.abs(spec.line(best) - value)) best = index;
+  return best;
+}
+
+function snappedSize(value, spec, minimum, maximum) {
+  const limits = normalizedLimits(minimum, maximum);
+  let best;
+  for (let start = spec.first; start < spec.last; start++) {
+    for (let end = start + 1; end <= spec.last; end++) {
+      const size = spec.line(end) - spec.line(start);
+      if (size < limits.min || size > limits.max) continue;
+      if (best === undefined || Math.abs(size - value) < Math.abs(best - value)) best = size;
+    }
   }
 
-  return sizeLimit(value, min, max);
+  return best ?? sizeLimit(value, limits.min, limits.max);
 }
 
-function nearestLine(value, origin, cell) {
-  return Math.round(origin + Math.round((value - origin) / cell) * cell);
+function snapWindowAxis(position, length, spec, minimum, maximum) {
+  const limits = normalizedLimits(minimum, maximum);
+  let best = null;
+  for (let start = spec.first; start < spec.last; start++) {
+    for (let end = start + 1; end <= spec.last; end++) {
+      const size = spec.line(end) - spec.line(start);
+      if (size < limits.min || size > limits.max) continue;
+      const candidate = {
+        position: spec.line(start),
+        length: size,
+        sizeDistance: Math.abs(size - length),
+        positionDistance: Math.abs(spec.line(start) - position),
+      };
+      if (
+        !best ||
+        candidate.sizeDistance < best.sizeDistance ||
+        (candidate.sizeDistance === best.sizeDistance &&
+          candidate.positionDistance < best.positionDistance)
+      )
+        best = candidate;
+    }
+  }
+
+  if (best) return best;
+  const constrained = sizeLimit(length, limits.min, limits.max);
+  let last = spec.first;
+  for (let index = spec.first; index <= spec.last; index++)
+    if (spec.line(index) + constrained <= spec.line(spec.last)) last = index;
+  const index = nearestIndex(position, spec, last);
+  return { position: spec.line(index), length: constrained };
 }
 
-function snapCoordinate(value, size, start, end, cell) {
-  if (size >= end - start) return start;
-  const lowIndex = Math.ceil((start - start) / cell),
-    highIndex = Math.floor((end - size - start) / cell),
-    index = clamp(Math.round((value - start) / cell), lowIndex, highIndex);
-
-  return Math.round(start + index * cell);
+function snapCoordinate(value, size, spec) {
+  let last = spec.first;
+  for (let index = spec.first; index <= spec.last; index++)
+    if (spec.line(index) + size <= spec.line(spec.last)) last = index;
+  return spec.line(nearestIndex(value, spec, last));
 }
 
 export function snapSize(size, grid, limits = {}) {
   if (limits.resizeable === false) return { width: size.width, height: size.height };
 
   return {
-    width: snapLength(
-      size.width,
-      grid.cellWidth,
-      grid.bounds.width,
-      limits.minWidth,
-      limits.maxWidth,
-    ),
-    height: snapLength(
-      size.height,
-      grid.cellHeight,
-      grid.bounds.height,
-      limits.minHeight,
-      limits.maxHeight,
-    ),
+    width: snappedSize(size.width, axis(grid, true), limits.minWidth, limits.maxWidth),
+    height: snappedSize(size.height, axis(grid, false), limits.minHeight, limits.maxHeight),
   };
 }
 
 export function snapPosition(rect, grid, limits = {}) {
   if (limits.moveable === false) return Object.assign({}, rect);
-  const bounds = grid.bounds;
-
   return Object.assign({}, rect, {
-    x: snapCoordinate(rect.x, rect.width, bounds.x, bounds.x + bounds.width, grid.cellWidth),
-    y: snapCoordinate(rect.y, rect.height, bounds.y, bounds.y + bounds.height, grid.cellHeight),
+    x: snapCoordinate(rect.x, rect.width, axis(grid, true)),
+    y: snapCoordinate(rect.y, rect.height, axis(grid, false)),
   });
 }
 
 export function snapWindow(rect, grid, limits = {}) {
-  const size = snapSize(rect, grid, limits);
+  if (limits.resizeable === false) return snapPosition(rect, grid, limits);
+  const horizontal = snapWindowAxis(
+      rect.x,
+      rect.width,
+      axis(grid, true),
+      limits.minWidth,
+      limits.maxWidth,
+    ),
+    vertical = snapWindowAxis(
+      rect.y,
+      rect.height,
+      axis(grid, false),
+      limits.minHeight,
+      limits.maxHeight,
+    );
 
-  return snapPosition(Object.assign({}, rect, size), grid, limits);
+  return {
+    x: horizontal.position,
+    y: vertical.position,
+    width: horizontal.length,
+    height: vertical.length,
+  };
 }
 
-function snapResizeAxis(
-  beforeStart,
-  beforeSize,
-  afterStart,
-  afterSize,
-  origin,
-  cell,
-  boundStart,
-  boundEnd,
-  min,
-  max,
-) {
+function snapResizeAxis(beforeStart, beforeSize, afterStart, afterSize, spec, minimum, maximum) {
   const beforeEnd = beforeStart + beforeSize,
     afterEnd = afterStart + afterSize,
     startChanged = afterStart !== beforeStart,
-    endChanged = afterEnd !== beforeEnd;
+    endChanged = afterEnd !== beforeEnd,
+    limits = normalizedLimits(minimum, maximum);
 
   if (!startChanged && !endChanged) return { start: afterStart, size: afterSize };
 
-  let start = startChanged
-      ? clamp(nearestLine(afterStart, origin, cell), boundStart, boundEnd)
-      : beforeStart,
-    end = endChanged ? clamp(nearestLine(afterEnd, origin, cell), boundStart, boundEnd) : beforeEnd;
-  const size = sizeLimit(end - start, min, max);
+  let best = null;
+  for (let startIndex = spec.first; startIndex <= spec.last; startIndex++) {
+    for (let endIndex = startIndex + 1; endIndex <= spec.last; endIndex++) {
+      const start = startChanged ? spec.line(startIndex) : beforeStart,
+        end = endChanged ? spec.line(endIndex) : beforeEnd,
+        size = end - start;
+      if (size < limits.min || size > limits.max) continue;
+      const distance =
+        (startChanged ? Math.abs(start - afterStart) : 0) +
+        (endChanged ? Math.abs(end - afterEnd) : 0);
+      if (!best || distance < best.distance) best = { start, size, distance };
+    }
+  }
+  if (best) return { start: best.start, size: best.size };
 
-  if (startChanged && !endChanged) start = end - size;
-  else end = start + size;
+  const size = sizeLimit(afterSize, limits.min, limits.max),
+    start = startChanged && !endChanged ? beforeEnd - size : afterStart;
 
-  return { start, size: end - start };
+  return { start, size };
 }
 
 export function snapResize(before, after, grid, limits = {}) {
@@ -144,10 +191,7 @@ export function snapResize(before, after, grid, limits = {}) {
       before.width,
       after.x,
       after.width,
-      grid.area.x,
-      grid.cellWidth,
-      grid.bounds.x,
-      grid.bounds.x + grid.bounds.width,
+      axis(grid, true),
       limits.minWidth,
       limits.maxWidth,
     ),
@@ -156,10 +200,7 @@ export function snapResize(before, after, grid, limits = {}) {
       before.height,
       after.y,
       after.height,
-      grid.area.y,
-      grid.cellHeight,
-      grid.bounds.y,
-      grid.bounds.y + grid.bounds.height,
+      axis(grid, false),
       limits.minHeight,
       limits.maxHeight,
     );

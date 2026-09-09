@@ -26,7 +26,17 @@
     }
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        "useArrowFunction": "off"
+      },
+      "style": {
+        "noDescendingSpecificity": "off",
+        "useTemplate": "off"
+      }
+    }
   },
   "assist": {
     "enabled": false

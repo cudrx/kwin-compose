@@ -8,7 +8,10 @@ function signal() {
   return {
     connect: (fn) => slots.add(fn),
     disconnect: (fn) => slots.delete(fn),
-    emit: (...args) => [...slots].forEach((fn) => fn(...args)),
+    emit: (...args) =>
+      [...slots].forEach((fn) => {
+        fn(...args);
+      }),
     slots,
   };
 }
@@ -31,6 +34,8 @@ function makeWindow(id, output, desktop, extra = {}) {
     resize: false,
     frameGeometry: rect(47, 52, 317, 248),
     frameGeometryChanged: signal(),
+    hiddenChanged: signal(),
+    minimizedChanged: signal(),
     interactiveMoveResizeStarted: signal(),
     interactiveMoveResizeFinished: signal(),
     moveResizedChanged: signal(),
@@ -102,8 +107,8 @@ test('finishing a move snaps only position', () => {
     window = f.add('moved');
   f.flush();
   window.frameGeometry = rect(60, 60, 317, 248);
-  window.interactiveMoveResizeStarted.emit();
   window.move = true;
+  window.interactiveMoveResizeStarted.emit();
   window.frameGeometry = rect(77, 83, 317, 248);
   window.move = false;
   window.interactiveMoveResizeFinished.emit();
@@ -115,12 +120,24 @@ test('finishing a resize snaps changed edges', () => {
     window = f.add('resized');
   f.flush();
   window.frameGeometry = rect(60, 60, 300, 240);
-  window.interactiveMoveResizeStarted.emit();
   window.resize = true;
+  window.interactiveMoveResizeStarted.emit();
   window.frameGeometry = rect(60, 60, 317, 257);
   window.resize = false;
   window.interactiveMoveResizeFinished.emit();
   assert.deepEqual(window.frameGeometry, rect(60, 60, 330, 270));
+});
+
+test('resize returning to the original size does not become a move', () => {
+  const f = fixture(),
+    window = f.add('resized');
+  f.flush();
+  window.frameGeometry = rect(47, 52, 317, 248);
+  window.resize = true;
+  window.interactiveMoveResizeStarted.emit();
+  window.resize = false;
+  window.interactiveMoveResizeFinished.emit();
+  assert.deepEqual(window.frameGeometry, rect(47, 52, 317, 248));
 });
 
 test('fallback move-resize state signal handles existing windows', () => {
@@ -144,6 +161,25 @@ test('ineligible windows are ignored', () => {
     window = f.add('dialog', { normalWindow: false, dialog: true });
   f.flush();
   assert.deepEqual(window.frameGeometry, rect(47, 52, 317, 248));
+});
+
+test('a hidden new window snaps after becoming eligible within the readiness deadline', () => {
+  const f = fixture(),
+    window = f.add('hidden', { hidden: true });
+  assert.deepEqual(window.frameGeometry, rect(47, 52, 317, 248));
+  window.hidden = false;
+  window.hiddenChanged.emit();
+  f.flush();
+  assert.deepEqual(window.frameGeometry, rect(60, 60, 330, 240));
+});
+
+test('work area uses the window desktop rather than the current desktop', () => {
+  const f = fixture(),
+    windowDesktop = { id: 'window-desktop' },
+    window = f.add('other-desktop', { desktops: [windowDesktop] });
+  f.workspace.clientArea = (_option, _output, desktop) =>
+    desktop === windowDesktop ? rect(-1200, 0, 1200, 900) : rect(0, 0, 1200, 900);
+  assert.equal(f.adapter.area(window).x, -1200);
 });
 
 test('adapter converts client size limits to frame size limits', () => {
@@ -172,4 +208,14 @@ test('removing a window disconnects its handlers', () => {
   f.workspace.windowRemoved.emit(window);
   assert.equal(window.interactiveMoveResizeStarted.slots.size, 0);
   assert.equal(window.interactiveMoveResizeFinished.slots.size, 0);
+});
+
+test('removing a new window cancels readiness timers and subscriptions', () => {
+  const f = fixture(),
+    window = f.add('pending', { frameGeometry: rect(0, 0, 0, 0) });
+  f.workspace.stackingOrder = [];
+  f.workspace.windowRemoved.emit(window);
+  f.flush();
+  assert.equal(window.frameGeometryChanged.slots.size, 0);
+  assert.equal(window.moveResizedChanged.slots.size, 0);
 });

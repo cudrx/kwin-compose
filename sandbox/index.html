@@ -46,7 +46,7 @@
                 >Высота<input id="height" type="number" min="60" max="6000" step="30" value="960"
               /></label>
             </div>
-            <button id="add" class="secondary">＋ Добавить окно</button>
+            <button id="add" class="secondary" type="button">＋ Добавить окно</button>
           </section>
           <section>
             <h2>Рабочая область <span>02</span></h2>
@@ -66,10 +66,13 @@
             >
           </section>
           <section class="compose-actions">
-            <button id="format" class="primary">Подогнать всё к сетке <span>↗</span></button>
+            <button id="format" class="primary" type="button">
+              Подогнать всё к сетке <span>↗</span>
+            </button>
             <p>Тестовая массовая операция только для веб-песочницы.</p>
             <div class="utility">
-              <button id="demo">Пример</button><button id="clear">Очистить</button>
+              <button id="demo" type="button">Пример</button
+              ><button id="clear" type="button">Очистить</button>
             </div>
           </section>
         </aside>
@@ -79,7 +82,7 @@
             ><span id="area-label">3440 × 1440</span>
           </div>
           <div class="stage-surround">
-            <div id="stage" aria-label="Рабочая область с окнами">
+            <section id="stage" aria-label="Рабочая область с окнами">
               <svg id="grid" aria-hidden="true"></svg>
               <div id="safe-area" aria-hidden="true"></div>
               <div id="windows"></div>
@@ -87,7 +90,7 @@
                 <span>＋</span><strong>Место для новой композиции</strong>
                 <p>Добавь окно или загрузи пример.</p>
               </div>
-            </div>
+            </section>
           </div>
           <div class="scene-footer">
             <span>Перетаскивай за заголовок · меняй размер за нижний угол</span

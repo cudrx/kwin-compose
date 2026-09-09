@@ -21,42 +21,31 @@ export function createController(adapter) {
     const state = { before: null, applying: false, cancelReady: () => {}, offs: [] };
     tracked.set(window, state);
 
-    function started() {
+    function started(kind) {
       if (state.applying || !adapter.valid(window)) return;
       state.cancelReady();
       state.before = adapter.geometry(window);
+      state.kind = kind;
     }
 
-    function finished() {
+    function finished(kind) {
       if (state.applying || !state.before || !adapter.valid(window)) return;
       const before = state.before,
         after = adapter.geometry(window);
       state.before = null;
       apply(window, (grid) => {
-        const resized = before.width !== after.width || before.height !== after.height,
-          result = resized
+        const result =
+          (kind || state.kind) === 'resize'
             ? snapResize(before, after, grid, adapter.limits(window))
             : snapPosition(after, grid, adapter.limits(window));
         state.applying = true;
         adapter.apply(window, result);
         state.applying = false;
       });
+      state.kind = null;
     }
 
-    if (
-      window.interactiveMoveResizeStarted?.connect &&
-      window.interactiveMoveResizeFinished?.connect
-    ) {
-      state.offs.push(adapter.connect(window.interactiveMoveResizeStarted, started));
-      state.offs.push(adapter.connect(window.interactiveMoveResizeFinished, finished));
-    } else {
-      state.offs.push(
-        adapter.connect(window.moveResizedChanged, () => {
-          if (window.move || window.resize) started();
-          else finished();
-        }),
-      );
-    }
+    state.offs.push(adapter.onInteractive(window, started, finished));
 
     if (snapOnReady && adapter.ordinary(window)) {
       state.cancelReady = adapter.whenReady(window, (ready) => {
@@ -75,11 +64,15 @@ export function createController(adapter) {
     const state = tracked.get(window);
     if (!state) return;
     state.cancelReady();
-    state.offs.forEach((off) => off());
+    state.offs.forEach((off) => {
+      off();
+    });
     tracked.delete(window);
   }
 
-  Array.from(adapter.workspace.stackingOrder).forEach((window) => track(window, false));
+  Array.from(adapter.workspace.stackingOrder).forEach((window) => {
+    track(window, false);
+  });
   const offAdded = adapter.connect(adapter.workspace.windowAdded, (window) => track(window, true)),
     offRemoved = adapter.connect(adapter.workspace.windowRemoved, untrack);
 

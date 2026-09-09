@@ -23,6 +23,21 @@ test('position snapping preserves the actual size', () => {
   assert.deepEqual(snapPosition(rect(47, 52, 317, 248), grid()), rect(60, 60, 317, 248));
 });
 
+test('position snapping uses an actual line on a fractional grid', () => {
+  const g = grid(rect(0, 0, 3440, 1440)),
+    actual = snapPosition(rect(165, 90, 317, 248), g);
+  assert.equal(actual.x, 179);
+  assert.ok(Array.from({ length: g.columns + 1 }, (_, index) => g.x(index)).includes(actual.x));
+});
+
+test('whole-window snapping puts both horizontal edges on fractional-grid lines', () => {
+  const g = grid(rect(0, 0, 3440, 1440)),
+    actual = snapWindow(rect(30, 90, 135, 248), g),
+    lines = Array.from({ length: g.columns + 1 }, (_, index) => g.x(index));
+  assert.ok(lines.includes(actual.x));
+  assert.ok(lines.includes(actual.x + actual.width));
+});
+
 test('position snapping keeps a movable oversized window predictable', () => {
   assert.deepEqual(snapPosition(rect(200, 200, 1500, 1000), grid()), rect(30, 30, 1500, 1000));
 });
@@ -66,6 +81,13 @@ test('resize constraints take priority over exact grid alignment', () => {
   );
 });
 
+test('resize chooses the nearest grid line allowed by size constraints', () => {
+  assert.deepEqual(
+    snapResize(rect(60, 60, 330, 240), rect(60, 60, 310, 240), grid(), { minWidth: 305 }),
+    rect(60, 60, 330, 240),
+  );
+});
+
 test('resize snapping keeps changed edges inside effective bounds when possible', () => {
   assert.deepEqual(
     snapResize(rect(840, 600, 300, 240), rect(840, 600, 352, 292), grid()),
@@ -79,6 +101,15 @@ test('snapping is idempotent', () => {
   assert.deepEqual(snapWindow(once, g), once);
   assert.deepEqual(snapPosition(once, g), once);
   assert.deepEqual(snapResize(once, once, g), once);
+});
+
+test('a completed resize result stays stable on a fractional grid', () => {
+  const g = grid(rect(-3440, 17, 3440, 1390)),
+    before = rect(-3201, 77, 299, 239),
+    after = rect(-3201, 77, 348, 268),
+    once = snapResize(before, after, g);
+  assert.deepEqual(snapResize(once, once, g), once);
+  assert.equal(once.x + once.width, g.x(20));
 });
 
 test('snap all treats windows independently and does not mutate the scene', () => {
