@@ -1,19 +1,14 @@
-// Coordinates are logical screen units. Build once, then reserve whole edge cells.
+import { DEFAULT_CONFIG, normalizeConfig } from './config.js';
+
+// Coordinates are logical screen units. The grid covers the entire work area.
 export function makeGrid(area, options = {}) {
-  const desired = Number(options.desiredStep ?? 30),
-    step = Number.isFinite(desired) && desired >= 8 ? desired : 30,
+  const step = normalizeConfig(options).desiredStep,
     columns = Math.max(1, Math.round(area.width / step)),
     rows = Math.max(1, Math.round(area.height / step)),
     cellWidth = area.width / columns,
     cellHeight = area.height / rows,
     x = (index) => Math.round(area.x + index * cellWidth),
-    y = (index) => Math.round(area.y + index * cellHeight),
-    margin = (name, fallback) =>
-      Math.max(0, Math.floor(Number(options[name] ?? fallback) || 0)),
-    left = Math.min(columns, margin('left', 1)),
-    right = Math.max(left, columns - margin('right', 1)),
-    top = Math.min(rows, margin('top', 1)),
-    bottom = Math.max(top, rows - margin('bottom', 2));
+    y = (index) => Math.round(area.y + index * cellHeight);
 
   return {
     area: Object.assign({}, area),
@@ -23,16 +18,28 @@ export function makeGrid(area, options = {}) {
     cellHeight,
     x,
     y,
-    left,
-    right,
-    top,
-    bottom,
-    bounds: {
-      x: x(left),
-      y: y(top),
-      width: x(right) - x(left),
-      height: y(bottom) - y(top),
-    },
+  };
+}
+
+export function insetArea(area, padding = {}) {
+  const value = (side, fallback) =>
+      Math.max(0, Number(padding[side] ?? fallback) || 0),
+    left = Math.min(area.width, value('left', DEFAULT_CONFIG.paddingLeft)),
+    right = Math.min(
+      area.width - left,
+      value('right', DEFAULT_CONFIG.paddingRight),
+    ),
+    top = Math.min(area.height, value('top', DEFAULT_CONFIG.paddingTop)),
+    bottom = Math.min(
+      area.height - top,
+      value('bottom', DEFAULT_CONFIG.paddingBottom),
+    );
+
+  return {
+    x: area.x + left,
+    y: area.y + top,
+    width: area.width - left - right,
+    height: area.height - top - bottom,
   };
 }
 
@@ -52,10 +59,21 @@ function sizeLimit(value, minimum, maximum) {
   return clamp(value, limits.min, limits.max);
 }
 
-function axis(grid, horizontal) {
-  return horizontal
-    ? { line: grid.x, first: grid.left, last: grid.right }
-    : { line: grid.y, first: grid.top, last: grid.bottom };
+function axis(context, horizontal) {
+  const grid = context.grid,
+    bounds = context.bounds,
+    line = horizontal ? grid.x : grid.y,
+    count = horizontal ? grid.columns : grid.rows,
+    start = horizontal ? bounds.x : bounds.y,
+    end = start + (horizontal ? bounds.width : bounds.height),
+    origin = horizontal ? grid.area.x : grid.area.y,
+    cell = horizontal ? grid.cellWidth : grid.cellHeight;
+  let first = 0,
+    last = count;
+  while (first < count && line(first) < start) first++;
+  while (last > first && line(last) > end) last--;
+
+  return { line, first, last, origin, cell };
 }
 
 function nearestIndex(value, spec, last = spec.last) {
@@ -120,47 +138,68 @@ function snapCoordinate(value, size, spec) {
   return spec.line(nearestIndex(value, spec, last));
 }
 
-export function snapSize(size, grid, limits = {}) {
+function snapUnboundedCoordinate(value, spec) {
+  const estimated = Math.round((value - spec.origin) / spec.cell);
+  let best = estimated;
+  for (let index = estimated - 2; index <= estimated + 2; index++)
+    if (Math.abs(spec.line(index) - value) < Math.abs(spec.line(best) - value))
+      best = index;
+
+  return spec.line(best);
+}
+
+function snapContainedPosition(rect, context, limits) {
+  if (limits.moveable === false) return Object.assign({}, rect);
+
+  return Object.assign({}, rect, {
+    x: snapCoordinate(rect.x, rect.width, axis(context, true)),
+    y: snapCoordinate(rect.y, rect.height, axis(context, false)),
+  });
+}
+
+export function snapSize(size, context, limits = {}) {
   if (limits.resizeable === false)
     return { width: size.width, height: size.height };
 
   return {
     width: snappedSize(
       size.width,
-      axis(grid, true),
+      axis(context, true),
       limits.minWidth,
       limits.maxWidth,
     ),
     height: snappedSize(
       size.height,
-      axis(grid, false),
+      axis(context, false),
       limits.minHeight,
       limits.maxHeight,
     ),
   };
 }
 
-export function snapPosition(rect, grid, limits = {}) {
+export function snapPosition(rect, context, limits = {}) {
   if (limits.moveable === false) return Object.assign({}, rect);
+
   return Object.assign({}, rect, {
-    x: snapCoordinate(rect.x, rect.width, axis(grid, true)),
-    y: snapCoordinate(rect.y, rect.height, axis(grid, false)),
+    x: snapUnboundedCoordinate(rect.x, axis(context, true)),
+    y: snapUnboundedCoordinate(rect.y, axis(context, false)),
   });
 }
 
-export function snapWindow(rect, grid, limits = {}) {
-  if (limits.resizeable === false) return snapPosition(rect, grid, limits);
+export function snapWindow(rect, context, limits = {}) {
+  if (limits.resizeable === false)
+    return snapContainedPosition(rect, context, limits);
   const horizontal = snapWindowAxis(
       rect.x,
       rect.width,
-      axis(grid, true),
+      axis(context, true),
       limits.minWidth,
       limits.maxWidth,
     ),
     vertical = snapWindowAxis(
       rect.y,
       rect.height,
-      axis(grid, false),
+      axis(context, false),
       limits.minHeight,
       limits.maxHeight,
     );
@@ -212,14 +251,14 @@ function snapResizeAxis(
   return { start, size };
 }
 
-export function snapResize(before, after, grid, limits = {}) {
+export function snapResize(before, after, context, limits = {}) {
   if (limits.resizeable === false) return Object.assign({}, after);
   const horizontal = snapResizeAxis(
       before.x,
       before.width,
       after.x,
       after.width,
-      axis(grid, true),
+      axis(context, true),
       limits.minWidth,
       limits.maxWidth,
     ),
@@ -228,7 +267,7 @@ export function snapResize(before, after, grid, limits = {}) {
       before.height,
       after.y,
       after.height,
-      axis(grid, false),
+      axis(context, false),
       limits.minHeight,
       limits.maxHeight,
     );
@@ -241,10 +280,10 @@ export function snapResize(before, after, grid, limits = {}) {
   };
 }
 
-export function snapAll(windows, grid) {
+export function snapAll(windows, context) {
   return windows.map((window) =>
     Object.assign({}, window, {
-      rect: snapWindow(window.rect, grid, window.limits ?? window),
+      rect: snapWindow(window.rect, context, window.limits ?? window),
     }),
   );
 }

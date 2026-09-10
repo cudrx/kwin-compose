@@ -24,13 +24,17 @@ if (typeof workspace !== 'undefined') {
   const composeAdapter = createKwinAdapter(workspace, {
     areaOption: KWin.MaximizeArea,
     schedule: composeSchedule,
-    config: () => ({
-      desiredStep: readConfig('DesiredStep', 30),
-      left: readConfig('MarginLeft', 1),
-      right: readConfig('MarginRight', 1),
-      top: readConfig('MarginTop', 1),
-      bottom: readConfig('MarginBottom', 2),
-    }),
+    config: () =>
+      normalizeConfig({
+        desiredStep: readConfig('DesiredStep', DEFAULT_CONFIG.desiredStep),
+        paddingLeft: readConfig('PaddingLeft', DEFAULT_CONFIG.paddingLeft),
+        paddingRight: readConfig('PaddingRight', DEFAULT_CONFIG.paddingRight),
+        paddingTop: readConfig('PaddingTop', DEFAULT_CONFIG.paddingTop),
+        paddingBottom: readConfig(
+          'PaddingBottom',
+          DEFAULT_CONFIG.paddingBottom,
+        ),
+      }),
     log: (message) => console.log('[kwin-compose] ' + message),
   });
   createController(composeAdapter);

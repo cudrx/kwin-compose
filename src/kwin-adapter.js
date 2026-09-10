@@ -1,3 +1,5 @@
+import { READINESS_TIMING } from './config.js';
+
 export function createKwinAdapter(workspace, host) {
   const disconnectors = new Set();
 
@@ -113,12 +115,19 @@ export function createKwinAdapter(workspace, host) {
     }
     function changed() {
       cancelQuiet();
-      if (eligible(window)) cancelQuiet = host.schedule(() => finish(true), 80);
+      if (eligible(window))
+        cancelQuiet = host.schedule(
+          () => finish(true),
+          READINESS_TIMING.quietMs,
+        );
     }
     offs.push(connect(window.frameGeometryChanged, changed));
     offs.push(connect(window.hiddenChanged, changed));
     offs.push(connect(window.minimizedChanged, changed));
-    cancelDeadline = host.schedule(() => finish(eligible(window)), 1500);
+    cancelDeadline = host.schedule(
+      () => finish(eligible(window)),
+      READINESS_TIMING.deadlineMs,
+    );
     changed();
 
     return () => finish(false);

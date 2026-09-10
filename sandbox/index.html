@@ -36,26 +36,9 @@
               <option value="custom">Свой размер</option>
             </select>
             <div class="two-fields">
-              <label
-                >Ширина<input
-                  id="width"
-                  type="number"
-                  min="60"
-                  max="6000"
-                  step="30"
-                  value="1260"
-                ></label
+              <label>Ширина<input id="width" type="number" step="30"></label
               ><span>×</span
-              ><label
-                >Высота<input
-                  id="height"
-                  type="number"
-                  min="60"
-                  max="6000"
-                  step="30"
-                  value="960"
-                ></label
-              >
+              ><label>Высота<input id="height" type="number" step="30"></label>
             </div>
             <button id="add" class="secondary" type="button">
               ＋ Добавить окно
@@ -72,8 +55,27 @@
             </select>
             <div class="step-field">
               <label for="step">Шаг сетки</label>
-              <input id="step" type="number" min="8" max="150" value="30">
+              <input id="step" type="number">
             </div>
+            <fieldset class="padding-fields">
+              <legend>Внутренние отступы</legend>
+              <label for="padding-left"
+                >Слева
+                <input id="padding-left" type="number">
+              </label>
+              <label for="padding-right"
+                >Справа
+                <input id="padding-right" type="number">
+              </label>
+              <label for="padding-top"
+                >Сверху
+                <input id="padding-top" type="number">
+              </label>
+              <label for="padding-bottom"
+                >Снизу
+                <input id="padding-bottom" type="number">
+              </label>
+            </fieldset>
             <label class="toggle"
               ><input id="grid-toggle" type="checkbox" checked>
               <span>Показать сетку</span></label

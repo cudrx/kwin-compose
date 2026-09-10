@@ -10,12 +10,16 @@ QtObject {
                 width: 1200,
                 height: 900
             });
+            const context = {
+                grid: g,
+                bounds: Compose.insetArea(g.area)
+            };
             const snapped = Compose.snapWindow({
                 x: -1112,
                 y: 83,
                 width: 317,
                 height: 248
-            }, g);
+            }, context);
             if (snapped.x !== -1110 || snapped.y !== 70 || snapped.width !== 330 || snapped.height !== 240)
                 throw new Error("window snapping failed");
             const moved = Compose.snapPosition({
@@ -23,7 +27,7 @@ QtObject {
                 y: 83,
                 width: 317,
                 height: 248
-            }, g);
+            }, context);
             if (moved.width !== 317 || moved.height !== 248)
                 throw new Error("position snapping changed size");
             const output = { name: "DP-1" }, desktop = { id: "d1" };

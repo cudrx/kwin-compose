@@ -40,6 +40,9 @@ Window {
             q('add').click();check(document.querySelectorAll('.window').length===2,'add');
             check(document.querySelector('.window').style.left===first.style.left,'existing position');
             q('grid-toggle').click();check(q('grid').style.display==='none','grid toggle');
+            const paddingBefore=q('safe-area').style.left;
+            q('padding-left').value='90';q('padding-left').dispatchEvent(new Event('change'));
+            check(q('safe-area').style.left!==paddingBefore,'independent padding');
             q('aspect').value='1080,1920';q('aspect').dispatchEvent(new Event('change'));
             check(q('area-label').textContent==='1080 × 1920','portrait');
             q('aspect').value='3440,1440';q('aspect').dispatchEvent(new Event('change'));

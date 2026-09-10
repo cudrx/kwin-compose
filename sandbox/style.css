@@ -201,6 +201,26 @@ input:focus-visible {
 .step-field label {
   margin: 0;
 }
+.padding-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin: 0 0 16px;
+  padding: 13px;
+  border: 1px solid #2d3747;
+  border-radius: 6px;
+}
+.padding-fields legend {
+  padding: 0 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.padding-fields label {
+  margin: 0;
+}
+.padding-fields input {
+  margin-top: 6px;
+}
 .toggle {
   display: flex;
   align-items: center;

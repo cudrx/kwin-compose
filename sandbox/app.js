@@ -1,10 +1,17 @@
 import {
+  insetArea,
   makeGrid,
   snapAll,
   snapPosition,
   snapResize,
   snapWindow,
 } from '../src/grid.js';
+import {
+  CONFIG_LIMITS,
+  DEFAULT_CONFIG,
+  normalizeConfig,
+  WINDOW_PRESETS,
+} from '../src/config.js';
 
 const $ = (id) => document.getElementById(id),
   palette = [
@@ -21,9 +28,29 @@ let area = { x: 0, y: 0, width: 3440, height: 1440 },
   nextId = 1,
   selected = null;
 
-const options = () => ({ desiredStep: Number($('step').value) });
-const grid = () => makeGrid(area, options());
+const config = () =>
+  normalizeConfig({
+    desiredStep: $('step').value,
+    paddingLeft: $('padding-left').value,
+    paddingRight: $('padding-right').value,
+    paddingTop: $('padding-top').value,
+    paddingBottom: $('padding-bottom').value,
+  });
+const snappingContext = () => {
+  const current = config();
+
+  return {
+    grid: makeGrid(area, current),
+    bounds: insetArea(area, {
+      left: current.paddingLeft,
+      right: current.paddingRight,
+      top: current.paddingTop,
+      bottom: current.paddingBottom,
+    }),
+  };
+};
 const message = (text) => ($('status').textContent = text);
+const paddingKey = (side) => `padding${side[0].toUpperCase()}${side.slice(1)}`;
 
 function displayWindow(window) {
   const element = document.createElement('article'),
@@ -53,7 +80,9 @@ function displayWindow(window) {
 }
 
 function render() {
-  const currentGrid = grid(),
+  const context = snappingContext(),
+    currentGrid = context.grid,
+    bounds = context.bounds,
     svg = $('grid');
   $('stage').style.aspectRatio = `${area.width}/${area.height}`;
   $('stage').style.maxWidth = area.height > area.width ? '420px' : 'none';
@@ -72,7 +101,7 @@ function render() {
     path += `M${area.x},${currentGrid.y(index)}H${area.x + area.width}`;
   svg.innerHTML = `<path d="${path}" fill="none" stroke="#91a7c1" stroke-opacity=".10" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
   $('safe-area').style.cssText =
-    `left:${((currentGrid.bounds.x - area.x) / area.width) * 100}%;top:${((currentGrid.bounds.y - area.y) / area.height) * 100}%;right:${((area.x + area.width - currentGrid.bounds.x - currentGrid.bounds.width) / area.width) * 100}%;bottom:${((area.y + area.height - currentGrid.bounds.y - currentGrid.bounds.height) / area.height) * 100}%`;
+    `left:${((bounds.x - area.x) / area.width) * 100}%;top:${((bounds.y - area.y) / area.height) * 100}%;right:${((area.x + area.width - bounds.x - bounds.width) / area.width) * 100}%;bottom:${((area.y + area.height - bounds.y - bounds.height) / area.height) * 100}%`;
   $('windows').replaceChildren(...windows.map(displayWindow));
   $('empty').style.display = windows.length ? 'none' : 'flex';
   $('count').textContent = `${windows.length} окон`;
@@ -127,8 +156,8 @@ function drag(event, window, resize) {
     target.removeEventListener('pointerup', end);
     target.removeEventListener('pointercancel', end);
     window.rect = resize
-      ? snapResize(original, window.rect, grid())
-      : snapPosition(window.rect, grid());
+      ? snapResize(original, window.rect, snappingContext())
+      : snapPosition(window.rect, snappingContext());
     window.status = resize ? 'Ресайз по сетке' : 'Позиция по сетке';
     render();
     message(
@@ -147,12 +176,14 @@ function add() {
     height = Number($('height').value);
   if (
     ![width, height].every(Number.isFinite) ||
-    width < 60 ||
-    height < 60 ||
-    width > 6000 ||
-    height > 6000
+    width < CONFIG_LIMITS.minimumWindowSize ||
+    height < CONFIG_LIMITS.minimumWindowSize ||
+    width > CONFIG_LIMITS.maximumWindowSize ||
+    height > CONFIG_LIMITS.maximumWindowSize
   ) {
-    message('Размеры должны быть от 60 до 6000.');
+    message(
+      `Размеры должны быть от ${CONFIG_LIMITS.minimumWindowSize} до ${CONFIG_LIMITS.maximumWindowSize}.`,
+    );
     return;
   }
   const number = nextId++,
@@ -168,7 +199,7 @@ function add() {
           width,
           height,
         },
-        grid(),
+        snappingContext(),
       ),
       status: 'Открыто по сетке',
     };
@@ -201,7 +232,7 @@ function demo() {
       number,
       title: names[index] + ' ' + number,
       z: index,
-      rect: snapWindow(raw, grid()),
+      rect: snapWindow(raw, snappingContext()),
       status: 'Открыто по сетке',
     });
   }
@@ -212,7 +243,7 @@ function demo() {
 $('add').onclick = add;
 $('demo').onclick = demo;
 $('format').onclick = () => {
-  windows = snapAll(windows, grid()).map((window) => ({
+  windows = snapAll(windows, snappingContext()).map((window) => ({
     ...window,
     status: 'Подогнано целиком',
   }));
@@ -228,30 +259,48 @@ $('clear').onclick = () => {
 };
 $('grid-toggle').onchange = render;
 $('step').onchange = () => {
-  if (
-    !Number.isFinite(Number($('step').value)) ||
-    Number($('step').value) < 8 ||
-    Number($('step').value) > 150
-  )
-    $('step').value = 30;
+  $('step').value = config().desiredStep;
   render();
   message(
     'Шаг изменён. Существующие окна сохраняют геометрию до следующего действия.',
   );
 };
+for (const side of ['left', 'right', 'top', 'bottom']) {
+  const id = `padding-${side}`;
+  $(id).onchange = () => {
+    $(id).value = config()[paddingKey(side)];
+    render();
+    message('Внутренние отступы изменены независимо от шага сетки.');
+  };
+}
 $('aspect').onchange = () => {
   const [width, height] = $('aspect').value.split(',').map(Number);
   area = { x: 0, y: 0, width, height };
   demo();
 };
+
+$('step').min = CONFIG_LIMITS.minimumStep;
+$('step').max = CONFIG_LIMITS.maximumStep;
+$('step').value = DEFAULT_CONFIG.desiredStep;
+for (const side of ['left', 'right', 'top', 'bottom']) {
+  const input = $(`padding-${side}`),
+    key = paddingKey(side);
+  input.min = 0;
+  input.max = CONFIG_LIMITS.maximumPadding;
+  input.value = DEFAULT_CONFIG[key];
+}
+$('width').min = CONFIG_LIMITS.minimumWindowSize;
+$('width').max = CONFIG_LIMITS.maximumWindowSize;
+$('height').min = CONFIG_LIMITS.minimumWindowSize;
+$('height').max = CONFIG_LIMITS.maximumWindowSize;
+$('width').value = WINDOW_PRESETS.browser.width;
+$('height').value = WINDOW_PRESETS.browser.height;
 $('preset').onchange = () => {
-  const presets = {
-      browser: [1260, 960],
-      terminal: [900, 690],
-      notes: [660, 1050],
-    },
-    selectedPreset = presets[$('preset').value];
-  if (selectedPreset) [$('width').value, $('height').value] = selectedPreset;
+  const selectedPreset = WINDOW_PRESETS[$('preset').value];
+  if (selectedPreset) {
+    $('width').value = selectedPreset.width;
+    $('height').value = selectedPreset.height;
+  }
 };
 
 demo();

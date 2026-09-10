@@ -1,19 +1,37 @@
-import { makeGrid, snapPosition, snapResize, snapWindow } from './grid.js';
+import {
+  insetArea,
+  makeGrid,
+  snapPosition,
+  snapResize,
+  snapWindow,
+} from './grid.js';
+import { normalizeConfig } from './config.js';
 
 export function createController(adapter) {
   const tracked = new Map();
   let disposed = false;
 
-  function gridFor(window) {
+  function snappingContext(window) {
     const area = adapter.area(window);
-    return area ? makeGrid(area, adapter.config()) : null;
+    if (!area) return null;
+    const config = normalizeConfig(adapter.config());
+
+    return {
+      grid: makeGrid(area, config),
+      bounds: insetArea(area, {
+        left: config.paddingLeft,
+        right: config.paddingRight,
+        top: config.paddingTop,
+        bottom: config.paddingBottom,
+      }),
+    };
   }
 
   function apply(window, operation) {
     if (disposed || !adapter.eligible(window)) return;
-    const grid = gridFor(window);
-    if (!grid) return;
-    operation(grid);
+    const context = snappingContext(window);
+    if (!context) return;
+    operation(context);
   }
 
   function track(window, snapOnReady) {
@@ -38,11 +56,11 @@ export function createController(adapter) {
       const before = state.before,
         after = adapter.geometry(window);
       state.before = null;
-      apply(window, (grid) => {
+      apply(window, (context) => {
         const result =
           (kind || state.kind) === 'resize'
-            ? snapResize(before, after, grid, adapter.limits(window))
-            : snapPosition(after, grid, adapter.limits(window));
+            ? snapResize(before, after, context, adapter.limits(window))
+            : snapPosition(after, context, adapter.limits(window));
         state.applying = true;
         adapter.apply(window, result);
         state.applying = false;
@@ -56,11 +74,11 @@ export function createController(adapter) {
       state.cancelReady = adapter.whenReady(window, (ready) => {
         state.cancelReady = () => {};
         if (!ready) return;
-        apply(ready, (grid) => {
+        apply(ready, (context) => {
           state.applying = true;
           adapter.apply(
             ready,
-            snapWindow(adapter.geometry(ready), grid, adapter.limits(ready)),
+            snapWindow(adapter.geometry(ready), context, adapter.limits(ready)),
           );
           state.applying = false;
         });
