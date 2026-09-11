@@ -279,11 +279,3 @@ export function snapResize(before, after, context, limits = {}) {
     height: vertical.size,
   };
 }
-
-export function snapAll(windows, context) {
-  return windows.map((window) =>
-    Object.assign({}, window, {
-      rect: snapWindow(window.rect, context, window.limits ?? window),
-    }),
-  );
-}

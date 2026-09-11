@@ -7,7 +7,6 @@
   "scripts": {
     "test": "node tests/core.test.js && node tests/runtime.test.js",
     "build": "node scripts/build.mjs",
-    "dev": "node scripts/serve.mjs",
     "check": "npm run format:check && biome lint . && node scripts/check.mjs",
     "format": "biome format --write .",
     "format:check": "biome format ."

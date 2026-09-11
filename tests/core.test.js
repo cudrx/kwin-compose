@@ -8,7 +8,6 @@ import {
 import {
   insetArea,
   makeGrid,
-  snapAll,
   snapPosition,
   snapResize,
   snapWindow,
@@ -184,16 +183,4 @@ test('a completed resize result stays stable on a fractional grid', () => {
       once.x + once.width,
     ),
   );
-});
-
-test('snap all treats windows independently and does not mutate the scene', () => {
-  const windows = [
-    { id: 'a', rect: rect(47, 52, 317, 248) },
-    { id: 'b', rect: rect(47, 52, 317, 248) },
-  ];
-  const saved = structuredClone(windows);
-  const actual = snapAll(windows, context());
-  assert.deepEqual(windows, saved);
-  assert.deepEqual(actual[0].rect, rect(60, 60, 330, 240));
-  assert.deepEqual(actual[1].rect, actual[0].rect);
 });

@@ -2,8 +2,6 @@ export const CONFIG_LIMITS = Object.freeze({
   minimumStep: 8,
   maximumStep: 150,
   maximumPadding: 2000,
-  minimumWindowSize: 60,
-  maximumWindowSize: 6000,
 });
 
 export const DEFAULT_CONFIG = Object.freeze({
@@ -17,12 +15,6 @@ export const DEFAULT_CONFIG = Object.freeze({
 
 export const READINESS_TIMING = Object.freeze({
   deadlineMs: 1500,
-});
-
-export const WINDOW_PRESETS = Object.freeze({
-  browser: Object.freeze({ width: 1260, height: 960 }),
-  terminal: Object.freeze({ width: 900, height: 690 }),
-  notes: Object.freeze({ width: 660, height: 1050 }),
 });
 
 function valueInRange(value, minimum, maximum, fallback) {
