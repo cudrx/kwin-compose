@@ -1,130 +1,104 @@
 # KWin Compose
 
-KWin Compose — сценарий для KDE Plasma 6, который привязывает свободно расположенные окна к
-общей сетке. Это не тайлинговый оконный менеджер: пользователь сам выбирает положение,
-перекрытия и композицию, а сценарий меняет только окно, с которым произошло действие.
+KDE Plasma 6 KWin script for snapping individual windows to a shared grid.
 
-## Поведение MVP
+## Runtime behavior
 
-- новое обычное окно подгоняется по позиции и размеру;
-- после завершения перемещения подгоняется только позиция, без принудительного
-  возврата окна внутрь рабочей области;
-- после завершения ресайза подгоняются изменённые края;
-- системная максимизация и привязка KWin к краям имеют приоритет над сеткой;
-- остальные окна всегда остаются на местах;
-- при включении сценария уже открытые окна не перемещаются;
-- хоткея и массовой команды в KWin нет.
+| Event | Operation |
+| --- | --- |
+| New window | Snap position and size |
+| Move finished | Snap position only |
+| Resize finished | Snap changed edges |
+| Script enabled | Track existing windows without modifying them |
 
-Существующее окно начнёт обрабатываться после следующего ручного перемещения или изменения
-размера. Окна могут полностью или частично перекрываться — сценарий не оценивает композицию и не
-ищет свободное место.
+KWin maximization and edge tiling override grid snapping. Moving a window
+outside the work area is allowed. The script does not modify other windows,
+focus, stacking order, output, or virtual desktop.
 
-Окно можно временно унести за край рабочей области. Его позиция продолжит
-привязываться к продолжению общей сетки, но сценарий не вернёт окно обратно.
+Dialogs, popups, special windows, panels, notifications, hidden, minimized,
+maximized, full-screen, deleted, and invalid windows are excluded.
 
-Исключаются диалоги, popup- и special-окна, панели, меню, уведомления, скрытые, свёрнутые,
-максимизированные и полноэкранные окна. Сценарий не меняет фокус, порядок слоёв, монитор или
-рабочий стол.
+## Geometry
 
-## Сетка и ограничения
+- Base area: `KWin.MaximizeArea` for the window output and desktop.
+- Default grid step: 40 logical units.
+- Default padding: 20 logical units on each side.
+- Floating Breeze panel inset: 8 logical units before bottom padding.
+- Window constraints: `moveable`, `resizeable`, `minSize`, and `maxSize`.
 
-Сетка строится по `KWin.MaximizeArea` текущего монитора и рабочего стола. Для нижней плавающей
-панели Breeze из области дополнительно исключается её прозрачный верхний inset размером 8
-логических единиц. Желаемый шаг по умолчанию — 40 логических единиц; фактический размер ячейки
-немного корректируется, чтобы крайние линии точно совпали с рабочей областью.
+Application constraints override exact grid alignment and work-area
+containment. The grid is deterministic and idempotent.
 
-Доступная для окон область вычисляется отдельно, как `padding` внутри рабочей области. По
-умолчанию резервируется по 20 логических единиц со всех сторон. Нижний padding отсчитывается от
-верхней границы уже исключённой панели. Сетка строится внутри полученной области, поэтому её
-крайние линии точно совпадают с padding. Изменение шага сетки не меняет эти отступы.
-Ограничения приложения (`moveable`, `resizeable`, минимальный, максимальный или фиксированный
-размер) имеют приоритет над точным совпадением с сеткой и помещением в доступные границы.
+## Modules
 
-## Сборка и проверка
+- `src/config.js`: defaults, limits, timing.
+- `src/grid.js`: KWin-independent geometry and snapping.
+- `src/kwin-adapter.js`: KWin API, signals, geometry, constraints, readiness.
+- `src/main.js`: event controller and window lifecycle.
+- `scripts/kwin-entry.js`: KWin bootstrap, Qt timers, configuration.
+- `scripts/build.mjs`: bundle and `.kwinscript` package generation.
 
-Требуется Node.js 20 или новее.
+The runtime is signal-driven and uses bounded readiness timers. Generated files
+under `package/contents/` and `dist/` must not be edited.
+
+## Build and test
+
+Requires Node.js 20 or newer.
 
 ```sh
 npm install
-npm test
+npm run format
 npm run check
+npm test
 npm run build
 ```
 
-Сборка создаёт:
+Build outputs:
 
-- `package/contents/code/main.js` — распакованный KWin entrypoint;
-- `dist/kwin-compose.kwinscript` — готовый пакет.
+- `package/contents/code/main.js`
+- `dist/kwin-compose.kwinscript`
 
-Runtime-зависимостей и внешнего архиватора нет. Сгенерированные файлы вручную не редактируются.
+Node tests cover geometry, the controller, and the KWin adapter.
+`tests/qt-smoke.qml` checks Qt JavaScript compatibility. Plasma integration
+requires manual Wayland and XWayland testing.
 
-## Установка
-
-После сборки:
+## Install
 
 ```sh
 kpackagetool6 --type KWin/Script --install dist/kwin-compose.kwinscript
 ```
 
-Если пакет уже установлен:
+Upgrade an installed package:
 
 ```sh
 kpackagetool6 --type KWin/Script --upgrade dist/kwin-compose.kwinscript
 ```
 
-Затем откройте **Параметры системы → Управление окнами → Сценарии KWin**, включите **Compose** и
-примените изменения. Установка в текущую сессию автоматически не выполняется.
+Enable **Compose** under **System Settings → Window Management → KWin Scripts**.
+Disable and re-enable the script after changing configuration.
 
-## Настройка
-
-Параметры читаются из группы `[Script-kwin-compose]` файла `kwinrc`:
-
-| Ключ | По умолчанию | Назначение |
-| --- | ---: | --- |
-| `DesiredStep` | `40` | Желаемый шаг сетки |
-| `PaddingLeft` | `20` | Отступ слева в логических единицах |
-| `PaddingRight` | `20` | Отступ справа в логических единицах |
-| `PaddingTop` | `20` | Отступ сверху в логических единицах |
-| `PaddingBottom` | `20` | Отступ над нижней панелью или краем области |
-| `FloatingPanelInset` | `8` | Прозрачная верхняя часть плавающей панели |
-
-Пример:
-
-```sh
-kwriteconfig6 --file kwinrc --group Script-kwin-compose --key DesiredStep 40
-```
-
-После изменения настроек выключите и снова включите сценарий.
-
-## Отключение и удаление
-
-Снимите флажок **Compose** в списке сценариев KWin и примените. Геометрия окон останется текущей.
-Для удаления пакета:
+Remove the package:
 
 ```sh
 kpackagetool6 --type KWin/Script --remove kwin-compose
 ```
 
-## Структура
+## Configuration
 
-- `src/config.js` — единые значения по умолчанию, пределы и runtime-тайминги;
-- `src/grid.js` — чистый расчёт сетки и три операции привязки;
-- `src/kwin-adapter.js` — свойства, сигналы и ограничения KWin;
-- `src/main.js` — событийный жизненный цикл окон;
-- `scripts/kwin-entry.js` — Qt-таймеры и конфигурация;
-- `tests/` — проверки геометрии, контроллера и адаптера.
+KWin reads values from `[Script-kwin-compose]` in `kwinrc`.
 
-Подробные границы компонентов описаны в [`docs/architecture.md`](docs/architecture.md), актуальные
-требования — в [`docs/requirements.ru.txt`](docs/requirements.ru.txt).
+| Key | Default |
+| --- | ---: |
+| `DesiredStep` | `40` |
+| `PaddingLeft` | `20` |
+| `PaddingRight` | `20` |
+| `PaddingTop` | `20` |
+| `PaddingBottom` | `20` |
+| `FloatingPanelInset` | `8` |
 
-## Ограничения проверки
-
-Node- и Qt-тесты не заменяют проверку в активной Plasma 6. После установки вручную
-следует проверить момент готовности новых окон, сигналы окончания move/resize и ограничения
-конкретных Wayland/XWayland-приложений. Скрипт не устанавливался и не загружался в рабочую
-KDE-сессию автоматически.
-
-Официальные справочники API:
+```sh
+kwriteconfig6 --file kwinrc --group Script-kwin-compose --key DesiredStep 40
+```
 
 - [KWin Scripting API](https://develop.kde.org/docs/plasma/kwin/api/)
-- [KWin Window](https://api.kde.org/qml-org-kde-kwin-window.html)
+- [KWin Window API](https://api.kde.org/qml-org-kde-kwin-window.html)

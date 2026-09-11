@@ -7,8 +7,7 @@
       "!!dist",
       "!!package/contents/code",
       "!!package-lock.json",
-      "!!tests/*.qml",
-      "!!docs/requirements.ru.txt"
+      "!!tests/*.qml"
     ]
   },
   "formatter": {
