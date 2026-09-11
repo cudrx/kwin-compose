@@ -1,6 +1,8 @@
 # KWin Compose
 
-KDE Plasma 6 KWin script for snapping individual windows to a shared grid.
+Arrange floating windows freely while keeping their geometry aligned. KWin
+Compose snaps moved and resized windows to a shared screen grid without
+creating a tiling layout or rearranging other windows.
 
 ## Runtime behavior
 
@@ -41,6 +43,21 @@ containment. The grid is deterministic and idempotent.
 The runtime is signal-driven and uses bounded readiness timers. Generated files
 under `package/contents/` and `dist/` must not be edited.
 
+## Why not KDE tiling?
+
+KWin Compose does not manage layouts. Windows remain ordinary floating windows,
+may overlap, and are never rearranged as a group. Only their geometry is
+quantized to a shared grid after an individual window event.
+
+## Compatibility
+
+| Environment | Status |
+| --- | --- |
+| KDE Plasma 6 | Required |
+| Wayland on Arch Linux | Tested |
+| XWayland applications | Manual testing required |
+| X11 session | Not verified |
+
 ## Build and test
 
 Requires Node.js 20 or newer.
@@ -57,6 +74,9 @@ Build outputs:
 
 - `package/contents/code/main.js`
 - `dist/kwin-compose.kwinscript`
+
+Release archives attach `dist/kwin-compose.kwinscript`; end users do not need
+Node.js.
 
 Node tests cover geometry, the controller, and the KWin adapter.
 `tests/qt-smoke.qml` checks Qt JavaScript compatibility. Plasma integration
@@ -102,3 +122,7 @@ kwriteconfig6 --file kwinrc --group Script-kwin-compose --key DesiredStep 40
 
 - [KWin Scripting API](https://develop.kde.org/docs/plasma/kwin/api/)
 - [KWin Window API](https://api.kde.org/qml-org-kde-kwin-window.html)
+
+## License
+
+[MIT](LICENSE)

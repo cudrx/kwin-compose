@@ -2,6 +2,7 @@
   "name": "kwin-compose",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Overlapping, grid-aligned window composition for KWin 6",
   "scripts": {
