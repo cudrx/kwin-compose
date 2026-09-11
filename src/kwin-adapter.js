@@ -5,12 +5,15 @@ export function createKwinAdapter(workspace, host) {
 
   function connect(signal, callback) {
     if (!signal?.connect) return () => {};
+
     signal.connect(callback);
     let connected = true;
     const disconnect = () => {
       if (!connected) return;
+
       connected = false;
       disconnectors.delete(disconnect);
+
       try {
         signal.disconnect(callback);
       } catch (_) {
@@ -18,16 +21,19 @@ export function createKwinAdapter(workspace, host) {
       }
     };
     disconnectors.add(disconnect);
+
     return disconnect;
   }
 
   function geometry(window) {
     const rect = window.frameGeometry;
+
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   }
 
   function valid(window) {
     if (!window || window.deleted) return false;
+
     const rect = geometry(window);
 
     return (
@@ -73,12 +79,14 @@ export function createKwinAdapter(workspace, host) {
         window.onAllDesktops || desktops.length === 0
           ? currentDesktop
           : desktops[0];
+
     if (!output || !desktop) return null;
 
     const maximizeArea = Object.assign(
       {},
       workspace.clientArea(host.areaOption, output, desktop),
     );
+
     const maximizeBottom = maximizeArea.y + maximizeArea.height,
       hasFloatingBottomPanel = Array.from(workspace.stackingOrder).some(
         (candidate) => {
@@ -96,6 +104,7 @@ export function createKwinAdapter(workspace, host) {
           );
         },
       );
+
     if (hasFloatingBottomPanel)
       maximizeArea.height = Math.max(
         0,
@@ -129,15 +138,16 @@ export function createKwinAdapter(workspace, host) {
     const offs = [];
     function finish(deliver) {
       if (finished) return;
+
       finished = true;
       cancelDeadline();
-      offs.forEach((off) => {
-        off();
-      });
+      offs.forEach((off) => void off());
       callback(deliver && eligible(window) ? window : null);
     }
+
     function changed() {
       if (!eligible(window)) return;
+
       finish(true);
     }
     offs.push(connect(window.frameGeometryChanged, changed));
@@ -158,12 +168,16 @@ export function createKwinAdapter(workspace, host) {
       kind = window.resize ? 'resize' : window.move ? 'move' : null;
       started(kind);
     }
+
     function end() {
       const completed = kind;
+
       kind = null;
       finished(completed);
     }
+
     const offs = [];
+
     if (
       window.interactiveMoveResizeStarted?.connect &&
       window.interactiveMoveResizeFinished?.connect
@@ -179,21 +193,21 @@ export function createKwinAdapter(workspace, host) {
       );
     }
 
-    return () =>
-      offs.forEach((off) => {
-        off();
-      });
+    return () => offs.forEach((off) => void off());
   }
 
   function apply(window, rect) {
     if (!valid(window)) return false;
+
     try {
       window.frameGeometry = host.makeRect
         ? host.makeRect(rect)
         : Object.assign({}, rect);
+
       return true;
     } catch (error) {
       host.log(String(error));
+
       return false;
     }
   }
@@ -214,8 +228,6 @@ export function createKwinAdapter(workspace, host) {
     config: host.config,
     log: host.log,
     dispose: () =>
-      Array.from(disconnectors).forEach((disconnect) => {
-        disconnect();
-      }),
+      Array.from(disconnectors).forEach((disconnect) => void disconnect()),
   };
 }

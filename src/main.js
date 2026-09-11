@@ -14,7 +14,9 @@ export function createController(adapter) {
   function snappingContext(window) {
     const config = normalizeConfig(adapter.config()),
       area = adapter.area(window, config.floatingPanelInset);
+
     if (!area) return null;
+
     const bounds = insetArea(area, {
       left: config.paddingLeft,
       right: config.paddingRight,
@@ -30,13 +32,17 @@ export function createController(adapter) {
 
   function apply(window, operation) {
     if (disposed || !adapter.eligible(window)) return;
+
     const context = snappingContext(window);
+
     if (!context) return;
+
     operation(context);
   }
 
   function track(window, snapOnReady) {
     if (!window || tracked.has(window)) return;
+
     const state = {
       before: null,
       applying: false,
@@ -81,7 +87,9 @@ export function createController(adapter) {
     if (snapOnReady && adapter.ordinary(window)) {
       state.cancelReady = adapter.whenReady(window, (ready) => {
         state.cancelReady = () => {};
+
         if (!ready) return;
+
         apply(ready, (context) => {
           state.applying = true;
           adapter.apply(
@@ -96,18 +104,18 @@ export function createController(adapter) {
 
   function untrack(window) {
     const state = tracked.get(window);
+
     if (!state) return;
+
     state.cancelReady();
     state.cancelFinish();
-    state.offs.forEach((off) => {
-      off();
-    });
+    state.offs.forEach((off) => void off());
     tracked.delete(window);
   }
 
-  Array.from(adapter.workspace.stackingOrder).forEach((window) => {
-    track(window, false);
-  });
+  Array.from(adapter.workspace.stackingOrder).forEach(
+    (window) => void track(window, false),
+  );
   const offAdded = adapter.connect(adapter.workspace.windowAdded, (window) =>
       track(window, true),
     ),

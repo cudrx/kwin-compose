@@ -56,6 +56,7 @@ function normalizedLimits(minimum, maximum) {
 
 function sizeLimit(value, minimum, maximum) {
   const limits = normalizedLimits(minimum, maximum);
+
   return clamp(value, limits.min, limits.max);
 }
 
@@ -78,9 +79,11 @@ function axis(context, horizontal) {
 
 function nearestIndex(value, spec, last = spec.last) {
   let best = spec.first;
+
   for (let index = spec.first + 1; index <= last; index++)
     if (Math.abs(spec.line(index) - value) < Math.abs(spec.line(best) - value))
       best = index;
+
   return best;
 }
 
@@ -90,7 +93,9 @@ function snappedSize(value, spec, minimum, maximum) {
   for (let start = spec.first; start < spec.last; start++) {
     for (let end = start + 1; end <= spec.last; end++) {
       const size = spec.line(end) - spec.line(start);
+
       if (size < limits.min || size > limits.max) continue;
+
       if (best === undefined || Math.abs(size - value) < Math.abs(best - value))
         best = size;
     }
@@ -105,7 +110,9 @@ function snapWindowAxis(position, length, spec, minimum, maximum) {
   for (let start = spec.first; start < spec.last; start++) {
     for (let end = start + 1; end <= spec.last; end++) {
       const size = spec.line(end) - spec.line(start);
+
       if (size < limits.min || size > limits.max) continue;
+
       const candidate = {
         position: spec.line(start),
         length: size,
@@ -123,24 +130,30 @@ function snapWindowAxis(position, length, spec, minimum, maximum) {
   }
 
   if (best) return best;
+
   const constrained = sizeLimit(length, limits.min, limits.max);
   let last = spec.first;
   for (let index = spec.first; index <= spec.last; index++)
     if (spec.line(index) + constrained <= spec.line(spec.last)) last = index;
+
   const index = nearestIndex(position, spec, last);
+
   return { position: spec.line(index), length: constrained };
 }
 
 function snapCoordinate(value, size, spec) {
   let last = spec.first;
+
   for (let index = spec.first; index <= spec.last; index++)
     if (spec.line(index) + size <= spec.line(spec.last)) last = index;
+
   return spec.line(nearestIndex(value, spec, last));
 }
 
 function snapUnboundedCoordinate(value, spec) {
   const estimated = Math.round((value - spec.origin) / spec.cell);
   let best = estimated;
+
   for (let index = estimated - 2; index <= estimated + 2; index++)
     if (Math.abs(spec.line(index) - value) < Math.abs(spec.line(best) - value))
       best = index;
@@ -189,6 +202,7 @@ export function snapPosition(rect, context, limits = {}) {
 export function snapWindow(rect, context, limits = {}) {
   if (limits.resizeable === false)
     return snapContainedPosition(rect, context, limits);
+
   const horizontal = snapWindowAxis(
       rect.x,
       rect.width,
@@ -236,13 +250,17 @@ function snapResizeAxis(
       const start = startChanged ? spec.line(startIndex) : beforeStart,
         end = endChanged ? spec.line(endIndex) : beforeEnd,
         size = end - start;
+
       if (size < limits.min || size > limits.max) continue;
+
       const distance =
         (startChanged ? Math.abs(start - afterStart) : 0) +
         (endChanged ? Math.abs(end - afterEnd) : 0);
+
       if (!best || distance < best.distance) best = { start, size, distance };
     }
   }
+
   if (best) return { start: best.start, size: best.size };
 
   const size = sizeLimit(afterSize, limits.min, limits.max),
@@ -253,6 +271,7 @@ function snapResizeAxis(
 
 export function snapResize(before, after, context, limits = {}) {
   if (limits.resizeable === false) return Object.assign({}, after);
+
   const horizontal = snapResizeAxis(
       before.x,
       before.width,

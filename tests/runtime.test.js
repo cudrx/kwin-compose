@@ -8,10 +8,7 @@ function signal() {
   return {
     connect: (fn) => slots.add(fn),
     disconnect: (fn) => slots.delete(fn),
-    emit: (...args) =>
-      [...slots].forEach((fn) => {
-        fn(...args);
-      }),
+    emit: (...args) => [...slots].forEach((fn) => void fn(...args)),
     slots,
   };
 }
@@ -72,8 +69,10 @@ function fixture(
     log: () => {},
     schedule: (fn, delay) => {
       const timer = { at: now + delay, fn };
+
       timers.push(timer);
       timers.sort((a, b) => a.at - b.at);
+
       return () => (timer.cancelled = true);
     },
     config: () => config,
@@ -85,7 +84,9 @@ function fixture(
     while (timers.length) {
       assert.ok(count++ < 100, 'bounded timers');
       const timer = timers.shift();
+
       now = timer.at;
+
       if (!timer.cancelled) timer.fn();
     }
   }
@@ -93,8 +94,10 @@ function fixture(
     const window = makeWindow(id, output, desktop, extra);
     workspace.stackingOrder.push(window);
     workspace.windowAdded.emit(window);
+
     return window;
   }
+
   return { workspace, adapter, controller, add, flush };
 }
 

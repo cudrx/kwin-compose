@@ -7,8 +7,10 @@ if (typeof workspace !== 'undefined') {
     timer.singleShot = true;
     timer.interval = delay;
     composeTimers.add(timer);
+
     function cancel() {
       if (!live) return;
+
       live = false;
       timer.stop();
       composeTimers.delete(timer);
@@ -18,6 +20,7 @@ if (typeof workspace !== 'undefined') {
       fn();
     });
     timer.start();
+
     return cancel;
   }
   const composeAdapter = createKwinAdapter(workspace, {

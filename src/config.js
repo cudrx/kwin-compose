@@ -19,6 +19,7 @@ export const READINESS_TIMING = Object.freeze({
 
 function valueInRange(value, minimum, maximum, fallback) {
   const number = Number(value);
+
   return Number.isFinite(number) && number >= minimum && number <= maximum
     ? number
     : fallback;
