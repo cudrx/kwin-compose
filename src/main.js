@@ -12,18 +12,19 @@ export function createController(adapter) {
   let disposed = false;
 
   function snappingContext(window) {
-    const area = adapter.area(window);
+    const config = normalizeConfig(adapter.config()),
+      area = adapter.area(window, config.floatingPanelInset);
     if (!area) return null;
-    const config = normalizeConfig(adapter.config());
+    const bounds = insetArea(area, {
+      left: config.paddingLeft,
+      right: config.paddingRight,
+      top: config.paddingTop,
+      bottom: config.paddingBottom,
+    });
 
     return {
-      grid: makeGrid(area, config),
-      bounds: insetArea(area, {
-        left: config.paddingLeft,
-        right: config.paddingRight,
-        top: config.paddingTop,
-        bottom: config.paddingBottom,
-      }),
+      grid: makeGrid(bounds, config),
+      bounds,
     };
   }
 
@@ -40,6 +41,7 @@ export function createController(adapter) {
       before: null,
       applying: false,
       cancelReady: () => {},
+      cancelFinish: () => {},
       offs: [],
     };
     tracked.set(window, state);
@@ -47,6 +49,7 @@ export function createController(adapter) {
     function started(kind) {
       if (state.applying || !adapter.valid(window)) return;
       state.cancelReady();
+      state.cancelFinish();
       state.before = adapter.geometry(window);
       state.kind = kind;
     }
@@ -54,18 +57,23 @@ export function createController(adapter) {
     function finished(kind) {
       if (state.applying || !state.before || !adapter.valid(window)) return;
       const before = state.before,
-        after = adapter.geometry(window);
+        after = adapter.geometry(window),
+        operationKind = kind || state.kind;
       state.before = null;
-      apply(window, (context) => {
-        const result =
-          (kind || state.kind) === 'resize'
-            ? snapResize(before, after, context, adapter.limits(window))
-            : snapPosition(after, context, adapter.limits(window));
-        state.applying = true;
-        adapter.apply(window, result);
-        state.applying = false;
-      });
       state.kind = null;
+      state.cancelFinish();
+      state.cancelFinish = adapter.afterKwin(() => {
+        state.cancelFinish = () => {};
+        apply(window, (context) => {
+          const result =
+            operationKind === 'resize'
+              ? snapResize(before, after, context, adapter.limits(window))
+              : snapPosition(after, context, adapter.limits(window));
+          state.applying = true;
+          adapter.apply(window, result);
+          state.applying = false;
+        });
+      });
     }
 
     state.offs.push(adapter.onInteractive(window, started, finished));
@@ -90,6 +98,7 @@ export function createController(adapter) {
     const state = tracked.get(window);
     if (!state) return;
     state.cancelReady();
+    state.cancelFinish();
     state.offs.forEach((off) => {
       off();
     });

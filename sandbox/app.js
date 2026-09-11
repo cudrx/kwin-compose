@@ -37,16 +37,17 @@ const config = () =>
     paddingBottom: $('padding-bottom').value,
   });
 const snappingContext = () => {
-  const current = config();
-
-  return {
-    grid: makeGrid(area, current),
-    bounds: insetArea(area, {
+  const current = config(),
+    bounds = insetArea(area, {
       left: current.paddingLeft,
       right: current.paddingRight,
       top: current.paddingTop,
       bottom: current.paddingBottom,
-    }),
+    });
+
+  return {
+    grid: makeGrid(bounds, current),
+    bounds,
   };
 };
 const message = (text) => ($('status').textContent = text);

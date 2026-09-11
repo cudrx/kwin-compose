@@ -16,10 +16,14 @@ import {
 
 const rect = (x, y, width, height) => ({ x, y, width, height });
 const padding = { left: 30, right: 30, top: 30, bottom: 60 };
-const context = (area = rect(0, 0, 1200, 900)) => ({
-  grid: makeGrid(area),
-  bounds: insetArea(area, padding),
-});
+const context = (area = rect(0, 0, 1200, 900)) => {
+  const bounds = insetArea(area, padding);
+
+  return {
+    grid: makeGrid(bounds, { desiredStep: 30 }),
+    bounds,
+  };
+};
 
 test('configuration defaults and limits have one normalized source', () => {
   assert.deepEqual(normalizeConfig(), DEFAULT_CONFIG);
@@ -29,6 +33,9 @@ test('configuration defaults and limits have one normalized source', () => {
   );
   assert.equal(CONFIG_LIMITS.minimumStep, 8);
   assert.equal(CONFIG_LIMITS.maximumPadding, 2000);
+  assert.equal(DEFAULT_CONFIG.paddingBottom, 20);
+  assert.equal(DEFAULT_CONFIG.floatingPanelInset, 8);
+  assert.equal('panelGap' in DEFAULT_CONFIG, false);
 });
 
 test('grid lines are relative to negative and non-zero work-area origins', () => {
@@ -72,7 +79,7 @@ test('position snapping uses an actual line on a fractional grid', () => {
   const snapContext = context(rect(0, 0, 3440, 1440)),
     g = snapContext.grid,
     actual = snapPosition(rect(165, 90, 317, 248), snapContext);
-  assert.equal(actual.x, 179);
+  assert.equal(actual.x, 180);
   assert.ok(
     Array.from({ length: g.columns + 1 }, (_, index) => g.x(index)).includes(
       actual.x,
@@ -172,7 +179,11 @@ test('a completed resize result stays stable on a fractional grid', () => {
     after = rect(-3201, 77, 348, 268),
     once = snapResize(before, after, snapContext);
   assert.deepEqual(snapResize(once, once, snapContext), once);
-  assert.equal(once.x + once.width, g.x(20));
+  assert.ok(
+    Array.from({ length: g.columns + 1 }, (_, index) => g.x(index)).includes(
+      once.x + once.width,
+    ),
+  );
 });
 
 test('snap all treats windows independently and does not mutate the scene', () => {

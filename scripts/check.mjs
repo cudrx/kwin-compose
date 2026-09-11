@@ -12,5 +12,8 @@ for (const dir of ['src', 'scripts', 'sandbox', 'tests']) {
       throw new Error('Trailing whitespace: ' + name);
   }
 }
+const kwinEntry = await readFile('scripts/kwin-entry.js', 'utf8');
+if (/\.deleteLater\s*\(/.test(kwinEntry))
+  throw new Error('KWin ScriptTimer does not expose deleteLater()');
 JSON.parse(await readFile('package/metadata.json', 'utf8'));
 console.log('JavaScript syntax and metadata OK');

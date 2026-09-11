@@ -2,6 +2,7 @@
   "KPlugin": {
     "Id": "kwin-compose",
     "Name": "Compose",
+    "Icon": "preferences-system-windows",
     "Description": "Compose overlapping windows on a dynamic grid",
     "Description[ru]": "Композиция перекрывающихся окон по динамической сетке",
     "Version": "0.1.0",

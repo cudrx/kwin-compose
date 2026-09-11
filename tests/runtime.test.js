@@ -45,7 +45,16 @@ function makeWindow(id, output, desktop, extra = {}) {
   };
 }
 
-function fixture(initial = []) {
+function fixture(
+  initial = [],
+  config = {
+    desiredStep: 30,
+    paddingLeft: 30,
+    paddingRight: 30,
+    paddingTop: 30,
+    paddingBottom: 60,
+  },
+) {
   const desktop = initial[0]?.desktops?.[0] ?? { id: 'd1' },
     output = initial[0]?.output ?? { name: 'DP-1' },
     timers = [];
@@ -67,7 +76,7 @@ function fixture(initial = []) {
       timers.sort((a, b) => a.at - b.at);
       return () => (timer.cancelled = true);
     },
-    config: () => ({}),
+    config: () => config,
   };
   const adapter = createKwinAdapter(workspace, host),
     controller = createController(adapter);
@@ -101,8 +110,72 @@ test('startup tracks existing windows without changing them', () => {
 test('a new ready window snaps size and position', () => {
   const f = fixture(),
     window = f.add('new');
-  f.flush();
   assert.deepEqual(window.frameGeometry, rect(60, 60, 330, 240));
+});
+
+test('padding is an exact grid boundary', () => {
+  const f = fixture([], {
+      desiredStep: 40,
+      paddingLeft: 20,
+      paddingRight: 20,
+      paddingTop: 20,
+      paddingBottom: 20,
+    }),
+    window = f.add('near-edge', {
+      frameGeometry: rect(1, 1, 317, 248),
+    });
+
+  assert.equal(window.frameGeometry.x, 20);
+  assert.equal(window.frameGeometry.y, 20);
+});
+
+test('maximum window height keeps visual padding above a floating panel', () => {
+  const output = { name: 'DP-1' },
+    desktop = { id: 'd1' },
+    panel = makeWindow('panel', output, desktop, {
+      dock: true,
+      normalWindow: false,
+      frameGeometry: rect(0, 1096, 1200, 56),
+    }),
+    f = fixture([panel], {
+      desiredStep: 40,
+      paddingLeft: 20,
+      paddingRight: 20,
+      paddingTop: 20,
+      paddingBottom: 20,
+      floatingPanelInset: 8,
+    });
+  f.workspace.clientArea = () => rect(0, 0, 1200, 1112);
+  const window = f.add('maximum-height', {
+    frameGeometry: rect(20, 20, 400, 1072),
+  });
+
+  assert.equal(window.frameGeometry.y, 20);
+  assert.equal(window.frameGeometry.y + window.frameGeometry.height, 1084);
+});
+
+test('non-floating panel does not apply the floating inset', () => {
+  const output = { name: 'DP-1' },
+    desktop = { id: 'd1' },
+    panel = makeWindow('panel', output, desktop, {
+      dock: true,
+      normalWindow: false,
+      frameGeometry: rect(0, 1112, 1200, 40),
+    }),
+    f = fixture([panel], {
+      desiredStep: 40,
+      paddingLeft: 20,
+      paddingRight: 20,
+      paddingTop: 20,
+      paddingBottom: 20,
+      floatingPanelInset: 8,
+    });
+  f.workspace.clientArea = () => rect(0, 0, 1200, 1112);
+  const window = f.add('maximum-height', {
+    frameGeometry: rect(20, 20, 400, 1072),
+  });
+
+  assert.equal(window.frameGeometry.y + window.frameGeometry.height, 1092);
 });
 
 test('finishing a move snaps only position', () => {
@@ -115,7 +188,38 @@ test('finishing a move snaps only position', () => {
   window.frameGeometry = rect(77, 83, 317, 248);
   window.move = false;
   window.interactiveMoveResizeFinished.emit();
+  f.flush();
   assert.deepEqual(window.frameGeometry, rect(90, 90, 317, 248));
+});
+
+test('KWin edge maximize wins over move snapping', () => {
+  const f = fixture(),
+    window = f.add('maximized');
+  window.frameGeometry = rect(60, 60, 317, 248);
+  window.move = true;
+  window.interactiveMoveResizeStarted.emit();
+  window.frameGeometry = rect(77, 0, 317, 248);
+  window.move = false;
+  window.interactiveMoveResizeFinished.emit();
+  window.maximizeMode = 3;
+  f.flush();
+
+  assert.deepEqual(window.frameGeometry, rect(77, 0, 317, 248));
+});
+
+test('KWin side tiling wins over move snapping', () => {
+  const f = fixture(),
+    window = f.add('tiled');
+  window.frameGeometry = rect(60, 60, 317, 248);
+  window.move = true;
+  window.interactiveMoveResizeStarted.emit();
+  window.frameGeometry = rect(0, 77, 317, 248);
+  window.move = false;
+  window.interactiveMoveResizeFinished.emit();
+  window.tile = { id: 'left' };
+  f.flush();
+
+  assert.deepEqual(window.frameGeometry, rect(0, 77, 317, 248));
 });
 
 test('finishing a resize snaps changed edges', () => {
@@ -128,6 +232,7 @@ test('finishing a resize snaps changed edges', () => {
   window.frameGeometry = rect(60, 60, 317, 257);
   window.resize = false;
   window.interactiveMoveResizeFinished.emit();
+  f.flush();
   assert.deepEqual(window.frameGeometry, rect(60, 60, 330, 270));
 });
 
@@ -140,6 +245,7 @@ test('resize returning to the original size does not become a move', () => {
   window.interactiveMoveResizeStarted.emit();
   window.resize = false;
   window.interactiveMoveResizeFinished.emit();
+  f.flush();
   assert.deepEqual(window.frameGeometry, rect(47, 52, 317, 248));
 });
 
@@ -150,12 +256,13 @@ test('fallback move-resize state signal handles existing windows', () => {
       interactiveMoveResizeStarted: undefined,
       interactiveMoveResizeFinished: undefined,
     });
-  fixture([existing]);
+  const f = fixture([existing]);
   existing.move = true;
   existing.moveResizedChanged.emit();
   existing.frameGeometry = rect(77, 83, 317, 248);
   existing.move = false;
   existing.moveResizedChanged.emit();
+  f.flush();
   assert.deepEqual(existing.frameGeometry, rect(90, 90, 317, 248));
 });
 
@@ -190,6 +297,7 @@ test('work area uses the window desktop rather than the current desktop', () => 
 test('adapter converts client size limits to frame size limits', () => {
   const f = fixture(),
     window = f.add('limited', {
+      hidden: true,
       frameGeometry: rect(0, 0, 320, 340),
       clientGeometry: { width: 300, height: 300 },
       minSize: { width: 100, height: 100 },

@@ -7,15 +7,15 @@ export const CONFIG_LIMITS = Object.freeze({
 });
 
 export const DEFAULT_CONFIG = Object.freeze({
-  desiredStep: 30,
-  paddingLeft: 30,
-  paddingRight: 30,
-  paddingTop: 30,
-  paddingBottom: 60,
+  desiredStep: 40,
+  paddingLeft: 20,
+  paddingRight: 20,
+  paddingTop: 20,
+  paddingBottom: 20,
+  floatingPanelInset: 8,
 });
 
 export const READINESS_TIMING = Object.freeze({
-  quietMs: 80,
   deadlineMs: 1500,
 });
 
@@ -63,6 +63,12 @@ export function normalizeConfig(config = {}) {
       0,
       CONFIG_LIMITS.maximumPadding,
       DEFAULT_CONFIG.paddingBottom,
+    ),
+    floatingPanelInset: valueInRange(
+      config.floatingPanelInset,
+      0,
+      CONFIG_LIMITS.maximumPadding,
+      DEFAULT_CONFIG.floatingPanelInset,
     ),
   };
 }

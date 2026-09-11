@@ -12,7 +12,6 @@ if (typeof workspace !== 'undefined') {
       live = false;
       timer.stop();
       composeTimers.delete(timer);
-      timer.deleteLater();
     }
     timer.timeout.connect(function () {
       cancel();
@@ -33,6 +32,10 @@ if (typeof workspace !== 'undefined') {
         paddingBottom: readConfig(
           'PaddingBottom',
           DEFAULT_CONFIG.paddingBottom,
+        ),
+        floatingPanelInset: readConfig(
+          'FloatingPanelInset',
+          DEFAULT_CONFIG.floatingPanelInset,
         ),
       }),
     log: (message) => console.log('[kwin-compose] ' + message),

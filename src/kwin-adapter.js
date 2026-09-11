@@ -56,12 +56,13 @@ export function createKwinAdapter(workspace, host) {
         valid(window) &&
         !window.fullScreen &&
         Number(window.maximizeMode) === 0 &&
+        !window.tile &&
         !window.minimized &&
         !window.hidden,
     );
   }
 
-  function area(window) {
+  function area(window, floatingPanelInset = 0) {
     const output = window.output,
       desktops = Array.from(window.desktops || []),
       currentDesktop =
@@ -74,10 +75,34 @@ export function createKwinAdapter(workspace, host) {
           : desktops[0];
     if (!output || !desktop) return null;
 
-    return Object.assign(
+    const maximizeArea = Object.assign(
       {},
       workspace.clientArea(host.areaOption, output, desktop),
     );
+    const maximizeBottom = maximizeArea.y + maximizeArea.height,
+      hasFloatingBottomPanel = Array.from(workspace.stackingOrder).some(
+        (candidate) => {
+          if (
+            !candidate?.dock ||
+            candidate.output !== output ||
+            !valid(candidate)
+          )
+            return false;
+
+          const panel = geometry(candidate);
+          return (
+            panel.y >= maximizeArea.y + maximizeArea.height / 2 &&
+            panel.y < maximizeBottom
+          );
+        },
+      );
+    if (hasFloatingBottomPanel)
+      maximizeArea.height = Math.max(
+        0,
+        maximizeArea.height - Math.max(0, Number(floatingPanelInset) || 0),
+      );
+
+    return maximizeArea;
   }
 
   function limits(window) {
@@ -100,13 +125,11 @@ export function createKwinAdapter(workspace, host) {
 
   function whenReady(window, callback) {
     let finished = false,
-      cancelQuiet = () => {},
       cancelDeadline = () => {};
     const offs = [];
     function finish(deliver) {
       if (finished) return;
       finished = true;
-      cancelQuiet();
       cancelDeadline();
       offs.forEach((off) => {
         off();
@@ -114,12 +137,8 @@ export function createKwinAdapter(workspace, host) {
       callback(deliver && eligible(window) ? window : null);
     }
     function changed() {
-      cancelQuiet();
-      if (eligible(window))
-        cancelQuiet = host.schedule(
-          () => finish(true),
-          READINESS_TIMING.quietMs,
-        );
+      if (!eligible(window)) return;
+      finish(true);
     }
     offs.push(connect(window.frameGeometryChanged, changed));
     offs.push(connect(window.hiddenChanged, changed));
@@ -190,6 +209,7 @@ export function createKwinAdapter(workspace, host) {
     limits,
     whenReady,
     onInteractive,
+    afterKwin: (callback) => host.schedule(callback, 0),
     apply,
     config: host.config,
     log: host.log,
