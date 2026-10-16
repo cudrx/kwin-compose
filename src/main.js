@@ -41,7 +41,7 @@ export function createController(adapter) {
   }
 
   function track(window, snapOnReady) {
-    if (!window || tracked.has(window)) return;
+    if (!window || window.outline || tracked.has(window)) return;
 
     const state = {
       before: null,

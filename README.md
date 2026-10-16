@@ -19,6 +19,8 @@ focus, stacking order, output, or virtual desktop.
 
 Dialogs, popups, special windows, panels, notifications, hidden, minimized,
 maximized, full-screen, deleted, and invalid windows are excluded.
+KWin's own maximize and tiling preview outlines are never tracked or snapped,
+even when KWin reports them as normal windows.
 
 ## Geometry
 

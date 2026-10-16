@@ -276,6 +276,34 @@ test('ineligible windows are ignored', () => {
   assert.deepEqual(window.frameGeometry, rect(47, 52, 317, 248));
 });
 
+test('KWin maximize preview is not snapped when it appears during a move', () => {
+  const f = fixture(),
+    window = f.add('moving');
+  window.move = true;
+  window.interactiveMoveResizeStarted.emit();
+  const preview = f.add('outline', { outline: true });
+  f.flush();
+
+  assert.deepEqual(preview.frameGeometry, rect(47, 52, 317, 248));
+  assert.equal(f.adapter.eligible(preview), false);
+  assert.equal(preview.interactiveMoveResizeStarted.slots.size, 0);
+});
+
+test('an existing KWin outline is not tracked or snapped', () => {
+  const output = { name: 'DP-1' },
+    desktop = { id: 'd1' },
+    preview = makeWindow('outline', output, desktop, { outline: true }),
+    f = fixture([preview]);
+  preview.move = true;
+  preview.interactiveMoveResizeStarted.emit();
+  preview.move = false;
+  preview.interactiveMoveResizeFinished.emit();
+  f.flush();
+
+  assert.deepEqual(preview.frameGeometry, rect(47, 52, 317, 248));
+  assert.equal(preview.interactiveMoveResizeStarted.slots.size, 0);
+});
+
 test('a hidden new window snaps after becoming eligible within the readiness deadline', () => {
   const f = fixture(),
     window = f.add('hidden', { hidden: true });

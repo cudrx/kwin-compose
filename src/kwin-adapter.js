@@ -48,6 +48,7 @@ export function createKwinAdapter(workspace, host) {
   function ordinary(window) {
     return Boolean(
       window.normalWindow &&
+        !window.outline &&
         !window.dialog &&
         !window.modal &&
         !window.popupWindow &&

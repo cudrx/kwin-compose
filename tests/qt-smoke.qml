@@ -9,7 +9,7 @@ QtObject {
                 y: 10,
                 width: 1200,
                 height: 900
-            });
+            }, { desiredStep: 30 });
             const context = {
                 grid: g,
                 bounds: Compose.insetArea(g.area)
